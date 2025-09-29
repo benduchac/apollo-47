@@ -102,7 +102,7 @@ export async function createRoom(scenario) {
   });
 
   listenToRoom(code);
-}
+
 
 export async function joinRoom(code) {
   if (!code || code.trim().length === 0) {
@@ -194,7 +194,7 @@ export async function joinRoom(code) {
 
   listenToRoom(code);
   return true;
-}
+
 
 export function listenToRoom(code) {
   const messagesRef = ref(database, `rooms/${code}/messages`);

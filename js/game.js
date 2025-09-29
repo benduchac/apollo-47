@@ -16,12 +16,22 @@ export const state = {
   scenarioOptions: []
 };
 
-export function getRoleLabel(role) {
+export function getRoleLabel(role, scenario) {
+  // If we have a scenario with custom roles, use those
+  if (scenario && scenario.roles) {
+    const roleData = scenario.roles.find(r => r.id === role);
+    if (roleData) {
+      return roleData.label;
+    }
+  }
+  
+  // Fallback to generic roles
   const labels = {
     'A1': '🚀 Astronaut 1 (Primary)',
     'A2': '🚀 Astronaut 2',
     'Base': '🎮 Mission Control',
-    'CDR': '⭐ Commander'
+    'CDR': '⭐ Commander',
+    'Support': '📻 Support'
   };
   return labels[role] || role;
 }

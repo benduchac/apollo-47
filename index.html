@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apollo 47 - Mission Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body class="bg-black text-green-400">
+  <div id="app"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getDatabase, ref, set, push, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDxtmtMIpzXMGWuOajEQLMfO6qw8H-prR8",
+      authDomain: "apollo-47.firebaseapp.com",
+      databaseURL: "https://apollo-47-default-rtdb.firebaseio.com/",
+      projectId: "apollo-47",
+      storageBucket: "apollo-47.firebasestorage.app",
+      messagingSenderId: "529700389059",
+      appId: "1:529700389059:web:afa848c6acb7ed12822276",
+      measurementId: "G-1RT6Y5614G"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    let state = {
+      gameState: 'start',
+      roomCode: '',
+      playerRole: '',
+      playerId: Math.random().toString(36).substring(7),
+      players: [],
+      messages: [],
+      spotlightPlayer: '',
+      inputMessage: ''
+    };
+
+    const ROLES = ['A1', 'Base', 'A2', 'CDR'];
+    const SCENARIO = "Astronaut working on airlock door during EVA, ground control assisting from the ground.";
+
+    function getRoleLabel(role) {
+      const labels = {
+        'A1': '🚀 Astronaut 1 (Primary)',
+        'A2': '🚀 Astronaut 2',
+        'Base': '🎮 Mission Control',
+        'CDR': '⭐ Commander'
+      };
+      return labels[role] || role;
+    }
+
+    function generateRoomCode() {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = 'APOLLO-';
+      for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    async function startGame() {
+      const code = generateRoomCode();
+      state.roomCode = code;
+      state.playerRole = ROLES[0];
+      state.spotlightPlayer = ROLES[0];
+      state.gameState = 'lobby';
+
+      const roomRef = ref(database, `rooms/${code}`);
+      await set(roomRef, {
+        created: Date.now(),
+        scenario: SCENARIO,
+        spotlightPlayer: ROLES[0],
+        players: {
+          [state.playerId]: {
+            role: ROLES[0],
+            joined: Date.now()
+          }
+        }
+      });
+
+      const messagesRef = ref(database, `rooms/${code}/messages`);
+      await push(messagesRef, {
+        type: 'system',
+        text: `Mission initialized. Room code: ${code}`,
+        timestamp: Date.now()
+      });
+      await push(messagesRef, {
+        type: 'scenario',
+        text: SCENARIO,
+        timestamp: Date.now()
+      });
+
+      listenToRoom(code);
+      render();
+    }
+
+    async function joinGame(code) {
+      // Validate input
+      if (!code || code.trim().length === 0) {
+        alert('Please enter a room code');
+        return;
+      }
+
+      const roomRef = ref(database, `rooms/${code}`);
+      const snapshot = await get(roomRef);
+      
+      if (!snapshot.exists()) {
+        alert('Room not found! Check the code and try again.');
+        return;
+      }
+
+      const roomData = snapshot.val();
+      const existingPlayers = roomData.players || {};
+      const playerCount = Object.keys(existingPlayers).length;
+
+      if (playerCount >= 4) {
+        alert('Room is full! Maximum 4 players.');
+        return;
+      }
+
+      state.roomCode = code;
+      state.playerRole = ROLES[playerCount];
+      state.spotlightPlayer = roomData.spotlightPlayer || ROLES[0];
+      state.gameState = 'playing';
+
+      const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
+      await set(playerRef, {
+        role: state.playerRole,
+        joined: Date.now()
+      });
+
+      const messagesRef = ref(database, `rooms/${code}/messages`);
+      await push(messagesRef, {
+        type: 'system',
+        text: `${state.playerRole} has joined the mission.`,
+        timestamp: Date.now()
+      });
+
+      listenToRoom(code);
+      render();
+    }
+
+    function listenToRoom(code) {
+      const messagesRef = ref(database, `rooms/${code}/messages`);
+      const playersRef = ref(database, `rooms/${code}/players`);
+
+      onValue(messagesRef, (snapshot) => {
+        state.messages = [];
+        snapshot.forEach((child) => {
+          state.messages.push({ id: child.key, ...child.val() });
+        });
+        state.messages.sort((a, b) => a.timestamp - b.timestamp);
+        render();
+        scrollToBottom();
+      });
+
+      onValue(playersRef, (snapshot) => {
+        state.players = [];
+        snapshot.forEach((child) => {
+          state.players.push(child.val().role);
+        });
+        render();
+      });
+    }
+
+    async function sendMessage() {
+      // Validate input
+      if (!state.inputMessage || state.inputMessage.trim().length === 0) {
+        return;
+      }
+
+      // Prevent messages longer than 500 characters
+      if (state.inputMessage.length > 500) {
+        alert('Message too long. Maximum 500 characters.');
+        return;
+      }
+
+      const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
+      await push(messagesRef, {
+        type: 'message',
+        role: state.playerRole,
+        text: state.inputMessage.trim(),
+        timestamp: Date.now()
+      });
+
+      state.inputMessage = '';
+      render();
+    }
+
+    function scrollToBottom() {
+      setTimeout(() => {
+        const messagesDiv = document.getElementById('messages');
+        if (messagesDiv) {
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+      }, 100);
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+
+      if (state.gameState === 'start') {
+        app.innerHTML = `
+          <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="w-full max-w-md space-y-6">
+              <div class="text-center space-y-2">
+                <h1 class="text-3xl font-bold">APOLLO 47</h1>
+                <p class="text-sm text-green-600">TECHNICAL HANDBOOK - MISSION CHAT</p>
+              </div>
+              
+              <div class="border-2 border-green-400 p-6 space-y-4">
+                <button onclick="startGame()" class="w-full bg-green-400 text-black py-3 px-4 font-bold hover:bg-green-300 transition">
+                  START NEW MISSION
+                </button>
+                
+                <div class="text-center text-green-600">- OR -</div>
+                
+                <div class="space-y-2">
+                  <input
+                    type="text"
+                    id="joinInput"
+                    placeholder="ENTER ROOM CODE"
+                    class="w-full bg-black border-2 border-green-400 p-3 text-green-400 placeholder-green-600"
+                  />
+                  <button onclick="joinWithCode()" class="w-full border-2 border-green-400 text-green-400 py-2 px-4 hover:bg-green-400 hover:text-black transition">
+                    JOIN MISSION
+                  </button>
+                </div>
+              </div>
+              
+              <p class="text-xs text-center text-green-600">
+                It's a parallel 1986. Moon landings have become commonplace and, dare we say, a little boring?
+              </p>
+            </div>
+          </div>
+        `;
+
+        const input = document.getElementById('joinInput');
+        if (input) {
+          input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') joinWithCode();
+          });
+        }
+      }
+
+      else if (state.gameState === 'lobby') {
+        app.innerHTML = `
+          <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="w-full max-w-md space-y-6">
+              <div class="text-center">
+                <h2 class="text-2xl font-bold mb-2">MISSION BRIEFING</h2>
+                <div class="text-lg mb-4">Room: ${state.roomCode}</div>
+              </div>
+              
+              <div class="border-2 border-green-400 p-4 space-y-4">
+                <div>
+                  <div class="text-sm text-green-600 mb-2">YOUR ROLE:</div>
+                  <div class="text-xl">${getRoleLabel(state.playerRole)}</div>
+                </div>
+                
+                <div>
+                  <div class="text-sm text-green-600 mb-2">SCENARIO:</div>
+                  <div class="text-sm">${SCENARIO}</div>
+                </div>
+                
+                <div>
+                  <div class="text-sm text-green-600 mb-2">CREW MANIFEST:</div>
+                  <div class="space-y-1">
+                    ${state.players.map(player => `
+                      <div class="flex items-center gap-2">
+                        <span>📻</span>
+                        ${getRoleLabel(player)}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+              
+              <button onclick="beginMission()" class="w-full bg-green-400 text-black py-3 px-4 font-bold hover:bg-green-300 transition">
+                BEGIN MISSION
+              </button>
+              
+              <div class="text-xs text-center text-green-600">
+                Share room code "${state.roomCode}" with other players
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      else if (state.gameState === 'playing') {
+        app.innerHTML = `
+          <div class="flex flex-col h-screen">
+            <div class="border-b-2 border-green-400 p-4">
+              <div>
+                <div class="font-bold">APOLLO 47 - ${state.roomCode}</div>
+                <div class="text-sm text-green-600">You are: ${getRoleLabel(state.playerRole)}</div>
+              </div>
+            </div>
+
+            <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3">
+              ${state.messages.map(msg => {
+                if (msg.type === 'system') {
+                  return `<div class="text-center text-green-600 text-sm italic">&gt; ${msg.text}</div>`;
+                }
+                if (msg.type === 'scenario') {
+                  return `
+                    <div class="border border-green-400 p-3 text-sm">
+                      <div class="text-green-600 mb-1">MISSION PARAMETERS:</div>
+                      ${msg.text}
+                    </div>
+                  `;
+                }
+                if (msg.type === 'message') {
+                  const tag = msg.role === state.spotlightPlayer ? '[PRIMARY]' : '[SUPPORT]';
+                  return `
+                    <div class="space-y-1">
+                      <div class="flex items-center gap-2">
+                        <span>📻</span>
+                        <span class="font-bold">${msg.role}</span>
+                        <span class="text-xs text-green-600">${tag}</span>
+                      </div>
+                      <div class="pl-5">${msg.text}</div>
+                    </div>
+                  `;
+                }
+                return '';
+              }).join('')}
+            </div>
+
+            <div class="border-t-2 border-green-400 p-4">
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  id="messageInput"
+                  placeholder="Type your transmission..."
+                  class="flex-1 bg-black border-2 border-green-400 p-2 text-green-400 placeholder-green-600"
+                  value="${state.inputMessage}"
+                />
+                <button onclick="sendMsg()" class="bg-green-400 text-black px-4 py-2 font-bold hover:bg-green-300 transition">
+                  ▶
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const input = document.getElementById('messageInput');
+        if (input) {
+          input.addEventListener('input', (e) => {
+            state.inputMessage = e.target.value;
+          });
+          input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMsg();
+          });
+          input.focus();
+        }
+      }
+    }
+
+    window.startGame = startGame;
+    window.joinWithCode = () => {
+      const input = document.getElementById('joinInput');
+      const code = input?.value?.trim().toUpperCase();
+      if (code && code.length > 0) {
+        joinGame(code);
+      } else {
+        alert('Please enter a room code');
+      }
+    };
+    window.beginMission = () => {
+      state.gameState = 'playing';
+      render();
+    };
+    window.sendMsg = sendMessage;
+
+    render();
+  </script>
+</body>
+</html>

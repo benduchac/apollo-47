@@ -51,6 +51,7 @@ export function getRoleLabel(role, scenario) {
   };
   return labels[role] || role;
 }
+
 export function generateRoomCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = 'APOLLO-';

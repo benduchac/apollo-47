@@ -99,7 +99,7 @@ function render() {
           <div class="border-2 border-green-400 p-4 space-y-4">
             <div>
               <div class="text-sm text-green-600 mb-2">YOUR ROLE:</div>
-              <div class="text-xl">${getRoleLabel(state.playerRole)}</div>
+              <div class="text-xl">${getRoleLabel(state.playerRole, state.selectedScenario)}</div>
             </div>
             
             <div>
@@ -113,7 +113,7 @@ function render() {
                 ${state.players.map(player => `
                   <div class="flex items-center gap-2">
                     <span>📻</span>
-                    ${getRoleLabel(player)}
+                    ${getRoleLabel(player, state.selectedScenario)}
                   </div>
                 `).join('')}
               </div>
@@ -139,7 +139,7 @@ function render() {
         <div class="border-b-2 border-green-400 p-4">
           <div>
             <div class="font-bold">APOLLO 47 - ${state.roomCode}</div>
-            <div class="text-sm text-green-600">You are: ${getRoleLabel(state.playerRole)}</div>
+            <div class="text-sm text-green-600">You are: ${getRoleLabel(state.playerRole, state.selectedScenario)}</div>
           </div>
         </div>
 

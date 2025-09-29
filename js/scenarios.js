@@ -53,7 +53,7 @@ export const NORMAL_SCENARIOS = [
     { id: "BaseC", label: "🏠 Crew at Base", isPrimary: false, briefing: "You have the manual and can walk through the calibration procedure. Your goal: Guide them through the fix step by step." },
     { id: "MissionControl", label: "🎮 Mission Control", isPrimary: false, briefing: "You're weighing the risk of continuing versus returning to base. Your goal: Make the call on whether to abort or proceed." }
   ]
-}
+},
 { 
   title: "Seismometer Deployment",
   playerCount: 4,

@@ -86,51 +86,56 @@ function render() {
     `;
   }
 
-  // LOBBY SCREEN
-  else if (state.gameState === 'lobby') {
-    app.innerHTML = `
-      <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="w-full max-w-md space-y-6">
-          <div class="text-center">
-            <h2 class="text-2xl font-bold mb-2">MISSION BRIEFING</h2>
-            <div class="text-lg mb-4">Room: ${state.roomCode}</div>
+// LOBBY SCREEN
+else if (state.gameState === 'lobby') {
+  app.innerHTML = `
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="w-full max-w-md space-y-6">
+        <div class="text-center">
+          <h2 class="text-2xl font-bold mb-2">MISSION BRIEFING</h2>
+          <div class="text-lg mb-4">Room: ${state.roomCode}</div>
+        </div>
+        
+        <div class="border-2 border-green-400 p-4 space-y-4">
+          <div>
+            <div class="text-sm text-green-600 mb-2">YOUR ROLE:</div>
+            <div class="text-xl">${getRoleLabel(state.playerRole, state.selectedScenario)}</div>
+          </div>
+
+          <div>
+            <div class="text-sm text-green-600 mb-2">YOUR BRIEFING:</div>
+            <div class="text-sm">${getPlayerBriefing(state.playerRole, state.selectedScenario)}</div>
           </div>
           
-          <div class="border-2 border-green-400 p-4 space-y-4">
-            <div>
-              <div class="text-sm text-green-600 mb-2">YOUR ROLE:</div>
-              <div class="text-xl">${getRoleLabel(state.playerRole, state.selectedScenario)}</div>
-            </div>
-            
-            <div>
-              <div class="text-sm text-green-600 mb-2">SCENARIO:</div>
-              <div class="text-sm">${state.selectedScenario ? state.selectedScenario.title : 'Loading...'}</div>
-            </div>
-            
-            <div>
-              <div class="text-sm text-green-600 mb-2">CREW MANIFEST:</div>
-              <div class="space-y-1">
-                ${state.players.map(player => `
-                  <div class="flex items-center gap-2">
-                    <span>📻</span>
-                    ${getRoleLabel(player, state.selectedScenario)}
-                  </div>
-                `).join('')}
-              </div>
-            </div>
+          <div>
+            <div class="text-sm text-green-600 mb-2">SITUATION:</div>
+            <div class="text-sm">${state.selectedScenario ? state.selectedScenario.setup : 'Loading...'}</div>
           </div>
           
-          <button onclick="beginMission()" class="w-full bg-green-400 text-black py-3 px-4 font-bold hover:bg-green-300 transition">
-            BEGIN MISSION
-          </button>
-          
-          <div class="text-xs text-center text-green-600">
-            Share room code "${state.roomCode}" with other players
+          <div>
+            <div class="text-sm text-green-600 mb-2">CREW MANIFEST:</div>
+            <div class="space-y-1">
+              ${state.players.map(player => `
+                <div class="flex items-center gap-2">
+                  <span>📻</span>
+                  ${getRoleLabel(player, state.selectedScenario)}
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
+        
+        <button onclick="beginMission()" class="w-full bg-green-400 text-black py-3 px-4 font-bold hover:bg-green-300 transition">
+          BEGIN MISSION
+        </button>
+        
+        <div class="text-xs text-center text-green-600">
+          Share room code "${state.roomCode}" with other players
+        </div>
       </div>
-    `;
-  }
+    </div>
+  `;
+}
 
   // PLAYING SCREEN
   else if (state.gameState === 'playing') {

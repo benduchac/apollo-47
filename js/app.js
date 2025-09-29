@@ -51,7 +51,7 @@ function render() {
     }
   }
 
-  // SCENARIO SELECTION SCREEN
+ // SCENARIO SELECTION SCREEN
   else if (state.gameState === 'selectScenario') {
     app.innerHTML = `
       <div class="flex items-center justify-center min-h-screen p-4">
@@ -67,8 +67,11 @@ function render() {
                 class="scenario-card border-2 border-green-400 p-4 space-y-2"
                 onclick="selectScenario(${idx})"
               >
-                <div class="font-bold text-lg">${scenario.title}</div>
-                <div class="text-sm text-green-600">${scenario.description}</div>
+                <div class="flex justify-between items-start">
+                  <div class="font-bold text-lg flex-1">${scenario.title}</div>
+                  <div class="text-xs text-green-600 ml-2">${scenario.playerCount} players</div>
+                </div>
+                <div class="text-sm text-green-600">${scenario.setup}</div>
               </div>
             `).join('')}
           </div>

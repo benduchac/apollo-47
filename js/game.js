@@ -48,23 +48,46 @@ export function generateRoomCode() {
 export async function createRoom(scenario) {
   const code = generateRoomCode();
   state.roomCode = code;
-  state.playerRole = ROLES[0];
-  state.spotlightPlayer = ROLES[0];
   state.selectedScenario = scenario;
+  
+  // Use scenario-specific roles
+  const primaryRole = scenario.roles[0].id;
+  state.playerRole = primaryRole;
+  state.spotlightPlayer = primaryRole;
   state.gameState = 'lobby';
 
   const roomRef = ref(database, `rooms/${code}`);
   await set(roomRef, {
     created: Date.now(),
-    scenario: scenario.title + ': ' + scenario.description,
-    spotlightPlayer: ROLES[0],
+    scenario: {
+      title: scenario.title,
+      setup: scenario.setup,
+      fullDescription: scenario.fullDescription,
+      roles: scenario.roles
+    },
+    spotlightPlayer: primaryRole,
     players: {
       [state.playerId]: {
-        role: ROLES[0],
+        role: primaryRole,
         joined: Date.now()
       }
     }
   });
+
+  const messagesRef = ref(database, `rooms/${code}/messages`);
+  await push(messagesRef, {
+    type: 'system',
+    text: `Mission initialized. Room code: ${code}`,
+    timestamp: Date.now()
+  });
+  await push(messagesRef, {
+    type: 'scenario',
+    text: scenario.fullDescription,
+    timestamp: Date.now()
+  });
+
+  listenToRoom(code);
+}
 
   const messagesRef = ref(database, `rooms/${code}/messages`);
   await push(messagesRef, {
@@ -86,6 +109,53 @@ export async function joinRoom(code) {
     alert('Please enter a room code');
     return false;
   }
+
+  const roomRef = ref(database, `rooms/${code}`);
+  const snapshot = await get(roomRef);
+  
+  if (!snapshot.exists()) {
+    alert('Room not found! Check the code and try again.');
+    return false;
+  }
+
+  const roomData = snapshot.val();
+  const existingPlayers = roomData.players || {};
+  const playerCount = Object.keys(existingPlayers).length;
+
+  if (playerCount >= 6) {
+    alert('Room is full! Maximum 6 players.');
+    return false;
+  }
+
+  state.roomCode = code;
+  state.selectedScenario = roomData.scenario;
+  state.spotlightPlayer = roomData.spotlightPlayer;
+  
+  // Assign role from scenario if available, otherwise "Support"
+  if (roomData.scenario && roomData.scenario.roles && playerCount < roomData.scenario.roles.length) {
+    state.playerRole = roomData.scenario.roles[playerCount].id;
+  } else {
+    state.playerRole = 'Support';
+  }
+  
+  state.gameState = 'playing';
+
+  const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
+  await set(playerRef, {
+    role: state.playerRole,
+    joined: Date.now()
+  });
+
+  const messagesRef = ref(database, `rooms/${code}/messages`);
+  await push(messagesRef, {
+    type: 'system',
+    text: `${getRoleLabel(state.playerRole, state.selectedScenario)} has joined the mission.`,
+    timestamp: Date.now()
+  });
+
+  listenToRoom(code);
+  return true;
+}
 
   const roomRef = ref(database, `rooms/${code}`);
   const snapshot = await get(roomRef);

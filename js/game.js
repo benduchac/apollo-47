@@ -1,0 +1,171 @@
+import { database } from './firebase-config.js';
+import { ref, set, push, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+export const ROLES = ['A1', 'Base', 'A2', 'CDR'];
+
+export const state = {
+  gameState: 'start',
+  roomCode: '',
+  playerRole: '',
+  playerId: Math.random().toString(36).substring(7),
+  players: [],
+  messages: [],
+  spotlightPlayer: '',
+  inputMessage: '',
+  selectedScenario: null,
+  scenarioOptions: []
+};
+
+export function getRoleLabel(role) {
+  const labels = {
+    'A1': '🚀 Astronaut 1 (Primary)',
+    'A2': '🚀 Astronaut 2',
+    'Base': '🎮 Mission Control',
+    'CDR': '⭐ Commander'
+  };
+  return labels[role] || role;
+}
+
+export function generateRoomCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = 'APOLLO-';
+  for (let i = 0; i < 4; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+export async function createRoom(scenario) {
+  const code = generateRoomCode();
+  state.roomCode = code;
+  state.playerRole = ROLES[0];
+  state.spotlightPlayer = ROLES[0];
+  state.selectedScenario = scenario;
+  state.gameState = 'lobby';
+
+  const roomRef = ref(database, `rooms/${code}`);
+  await set(roomRef, {
+    created: Date.now(),
+    scenario: scenario.title + ': ' + scenario.description,
+    spotlightPlayer: ROLES[0],
+    players: {
+      [state.playerId]: {
+        role: ROLES[0],
+        joined: Date.now()
+      }
+    }
+  });
+
+  const messagesRef = ref(database, `rooms/${code}/messages`);
+  await push(messagesRef, {
+    type: 'system',
+    text: `Mission initialized. Room code: ${code}`,
+    timestamp: Date.now()
+  });
+  await push(messagesRef, {
+    type: 'scenario',
+    text: scenario.title + ': ' + scenario.description,
+    timestamp: Date.now()
+  });
+
+  listenToRoom(code);
+}
+
+export async function joinRoom(code) {
+  if (!code || code.trim().length === 0) {
+    alert('Please enter a room code');
+    return false;
+  }
+
+  const roomRef = ref(database, `rooms/${code}`);
+  const snapshot = await get(roomRef);
+  
+  if (!snapshot.exists()) {
+    alert('Room not found! Check the code and try again.');
+    return false;
+  }
+
+  const roomData = snapshot.val();
+  const existingPlayers = roomData.players || {};
+  const playerCount = Object.keys(existingPlayers).length;
+
+  if (playerCount >= 4) {
+    alert('Room is full! Maximum 4 players.');
+    return false;
+  }
+
+  state.roomCode = code;
+  state.playerRole = ROLES[playerCount];
+  state.spotlightPlayer = roomData.spotlightPlayer || ROLES[0];
+  state.gameState = 'playing';
+
+  const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
+  await set(playerRef, {
+    role: state.playerRole,
+    joined: Date.now()
+  });
+
+  const messagesRef = ref(database, `rooms/${code}/messages`);
+  await push(messagesRef, {
+    type: 'system',
+    text: `${state.playerRole} has joined the mission.`,
+    timestamp: Date.now()
+  });
+
+  listenToRoom(code);
+  return true;
+}
+
+export function listenToRoom(code) {
+  const messagesRef = ref(database, `rooms/${code}/messages`);
+  const playersRef = ref(database, `rooms/${code}/players`);
+
+  onValue(messagesRef, (snapshot) => {
+    state.messages = [];
+    snapshot.forEach((child) => {
+      state.messages.push({ id: child.key, ...child.val() });
+    });
+    state.messages.sort((a, b) => a.timestamp - b.timestamp);
+    window.renderApp && window.renderApp();
+    scrollToBottom();
+  });
+
+  onValue(playersRef, (snapshot) => {
+    state.players = [];
+    snapshot.forEach((child) => {
+      state.players.push(child.val().role);
+    });
+    window.renderApp && window.renderApp();
+  });
+}
+
+export async function sendMessage() {
+  if (!state.inputMessage || state.inputMessage.trim().length === 0) {
+    return;
+  }
+
+  if (state.inputMessage.length > 500) {
+    alert('Message too long. Maximum 500 characters.');
+    return;
+  }
+
+  const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
+  await push(messagesRef, {
+    type: 'message',
+    role: state.playerRole,
+    text: state.inputMessage.trim(),
+    timestamp: Date.now()
+  });
+
+  state.inputMessage = '';
+  window.renderApp && window.renderApp();
+}
+
+function scrollToBottom() {
+  setTimeout(() => {
+    const messagesDiv = document.getElementById('messages');
+    if (messagesDiv) {
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  }, 100);
+}

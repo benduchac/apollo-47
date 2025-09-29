@@ -16,14 +16,21 @@ export const state = {
   scenarioOptions: []
 };
 
-export function getRoleLabel(role, scenario) {
-  // If we have a scenario with custom roles, use those
+export function getPlayerBriefing(role, scenario) {
   if (scenario && scenario.roles) {
     const roleData = scenario.roles.find(r => r.id === role);
-    if (roleData) {
-      return roleData.label;
+    if (roleData && roleData.briefing) {
+      return roleData.briefing;
     }
   }
+  
+  // Fallback for generic support role
+  if (role === 'Support') {
+    return "You're providing additional mission support. Your goal: Assist the primary crew member and help solve problems.";
+  }
+  
+  return "Awaiting mission briefing...";
+}
   
   // Fallback to generic roles
   const labels = {

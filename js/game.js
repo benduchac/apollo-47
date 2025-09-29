@@ -89,21 +89,6 @@ export async function createRoom(scenario) {
   listenToRoom(code);
 }
 
-  const messagesRef = ref(database, `rooms/${code}/messages`);
-  await push(messagesRef, {
-    type: 'system',
-    text: `Mission initialized. Room code: ${code}`,
-    timestamp: Date.now()
-  });
-  await push(messagesRef, {
-    type: 'scenario',
-    text: scenario.title + ': ' + scenario.description,
-    timestamp: Date.now()
-  });
-
-  listenToRoom(code);
-
-
 export async function joinRoom(code) {
   if (!code || code.trim().length === 0) {
     alert('Please enter a room code');
@@ -156,45 +141,6 @@ export async function joinRoom(code) {
   listenToRoom(code);
   return true;
 }
-
-  const roomRef = ref(database, `rooms/${code}`);
-  const snapshot = await get(roomRef);
-  
-  if (!snapshot.exists()) {
-    alert('Room not found! Check the code and try again.');
-    return false;
-  }
-
-  const roomData = snapshot.val();
-  const existingPlayers = roomData.players || {};
-  const playerCount = Object.keys(existingPlayers).length;
-
-  if (playerCount >= 4) {
-    alert('Room is full! Maximum 4 players.');
-    return false;
-  }
-
-  state.roomCode = code;
-  state.playerRole = ROLES[playerCount];
-  state.spotlightPlayer = roomData.spotlightPlayer || ROLES[0];
-  state.gameState = 'playing';
-
-  const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
-  await set(playerRef, {
-    role: state.playerRole,
-    joined: Date.now()
-  });
-
-  const messagesRef = ref(database, `rooms/${code}/messages`);
-  await push(messagesRef, {
-    type: 'system',
-    text: `${state.playerRole} has joined the mission.`,
-    timestamp: Date.now()
-  });
-
-  listenToRoom(code);
-  return true;
-
 
 export function listenToRoom(code) {
   const messagesRef = ref(database, `rooms/${code}/messages`);

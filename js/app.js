@@ -156,7 +156,7 @@ else if (state.gameState === 'lobby') {
             if (msg.type === 'scenario') {
               return `
                 <div class="border border-green-400 p-3 text-sm">
-                  <div class="text-green-600 mb-1">MISSION PARAMETERS:</div>
+                  <div class="text-green-600 mb-1">MISSION SITUATION:</div>
                   ${msg.text}
                 </div>
               `;

@@ -89,7 +89,7 @@ export async function createRoom(scenario) {
   });
   await push(messagesRef, {
     type: 'scenario',
-    text: scenario.fullDescription,
+    text: scenario.setup,
     timestamp: Date.now()
   });
 

@@ -35,7 +35,11 @@ function render() {
               </button>
             </div>
           </div>
-          
+          <div class="text-center">
+<button onclick="showHowToPlay()" class="w-full border-2 border-green-400 text-green-400 py-2 px-4 hover:bg-green-400 hover:text-black transition">
+  HOW TO PLAY
+</button>
+</div>
           <p class="text-xs text-center text-green-600">
             It's a parallel 1986. Moon landings have become commonplace and, dare we say, a little boring?
           </p>
@@ -50,6 +54,91 @@ function render() {
       });
     }
   }
+
+  // HOW TO PLAY SCREEN
+else if (state.gameState === 'howToPlay') {
+  app.innerHTML = `
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="w-full max-w-3xl space-y-6">
+        <div class="text-center">
+          <h2 class="text-2xl font-bold mb-2">HOW TO PLAY APOLLO 47</h2>
+          <p class="text-sm text-green-600">A guide for new astronauts</p>
+        </div>
+        
+        <div class="border-2 border-green-400 p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+          <div>
+            <h3 class="text-lg font-bold mb-2 text-green-300">What Is This Game?</h3>
+            <p class="text-sm">Apollo 47 is an improvisational roleplaying game set in an alternate 1986 where moon landings are routine. Players collaborate to tell stories about mundane mission complications through radio chat.</p>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold mb-2 text-green-300">Game Setup</h3>
+            <p class="text-sm mb-2">This is a <strong>2-6 player</strong> game played entirely through text chat:</p>
+            <ul class="text-sm list-disc list-inside space-y-1">
+              <li>One player starts a new mission and selects a scenario</li>
+              <li>They receive a room code to share with others</li>
+              <li>Other players join using the room code</li>
+              <li>Each player is assigned a role from the scenario</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold mb-2 text-green-300">The Two Roles</h3>
+            <div class="space-y-2 text-sm">
+              <p><strong class="text-green-300">[PRIMARY] - The Spotlight Astronaut:</strong> You're dealing with the mission complication hands-on. Describe what you're doing, what you see, and what problems you're encountering. Lead the scene.</p>
+              <p><strong class="text-green-300">[SUPPORT] - Voices on the Radio:</strong> You're Mission Control, other crew members, or support staff. Guide the Primary astronaut, ask for clarifications, offer suggestions, and introduce small complications to keep things interesting.</p>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold mb-2 text-green-300">How to Play</h3>
+            <ul class="text-sm list-disc list-inside space-y-1">
+              <li><strong>Use technical jargon freely</strong> - Invent equipment names, refer to systems by alphanumeric codes (CBT445S, Alpha-2 Umbilical, etc.)</li>
+              <li><strong>Call and response</strong> - Confirm transmissions: "Copy that" / "Roger" / "Check nine on that"</li>
+              <li><strong>Create nested problems</strong> - One issue leads to another: "The clamps won't release because the power coupling is stuck..."</li>
+              <li><strong>Keep it mundane</strong> - Focus on technical difficulties, not life-or-death drama</li>
+              <li><strong>Support, don't dominate</strong> - If you're SUPPORT, let the PRIMARY lead. Ask questions, don't take over</li>
+              <li><strong>Embrace contradictions</strong> - If something doesn't match up, explain it in-character rather than arguing</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold mb-2 text-green-300">The Tone</h3>
+            <p class="text-sm">Apollo 47 is about the <em>mundane reality of space work</em>. Think:</p>
+            <ul class="text-sm list-disc list-inside space-y-1 mt-2">
+              <li>Jammed hatches, not alien invasions</li>
+              <li>Equipment malfunctions, not explosions</li>
+              <li>Paperwork and procedures, not heroics</li>
+              <li>Technical banter, not epic speeches</li>
+            </ul>
+            <p class="text-sm mt-2">The fun comes from <strong>sounding professional while improvising technical problems</strong>.</p>
+          </div>
+
+          <div>
+            <h3 class="text-lg font-bold mb-2 text-green-300">Tips for Success</h3>
+            <ul class="text-sm list-disc list-inside space-y-1">
+              <li><strong>Say "yes, and"</strong> - Build on what others establish</li>
+              <li><strong>Ask clarifying questions</strong> - "What's the voltage reading?" / "Can you see the serial number?"</li>
+              <li><strong>Repeat jargon back</strong> - If someone mentions "RM11 clamps," reference them later</li>
+              <li><strong>Keep messages focused</strong> - Short transmissions feel more like radio chatter</li>
+              <li><strong>Support the story</strong> - Everyone works together to make the scene interesting</li>
+            </ul>
+          </div>
+
+          <div class="border-t border-green-600 pt-4">
+            <p class="text-xs text-green-600 italic">Based on the tabletop RPG by Tim Hutchings</p>
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <button onclick="backToStart()" class="border-2 border-green-400 text-green-400 py-2 px-6 hover:bg-green-400 hover:text-black transition">
+            ← BACK TO START
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
  // SCENARIO SELECTION SCREEN
   else if (state.gameState === 'selectScenario') {
@@ -212,6 +301,11 @@ else if (state.gameState === 'lobby') {
 window.showScenarios = () => {
   state.scenarioOptions = getRandomScenarios();
   state.gameState = 'selectScenario';
+  render();
+};
+
+window.showHowToPlay = () => {
+  state.gameState = 'howToPlay';
   render();
 };
 

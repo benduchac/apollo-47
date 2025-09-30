@@ -3,11 +3,12 @@ import { state, getRoleLabel, getPlayerBriefing, createRoom, joinRoom, sendMessa
 import { escapeHtml } from './utils.js';
 
 window.renderApp = render;
+window.renderMessages = renderMessages; // Add this line
 
 function render() {
   const app = document.getElementById('app');
 
-  // START SCREEN
+   // START SCREEN
   if (state.gameState === 'start') {
     app.innerHTML = `
       <div class="flex items-center justify-center min-h-screen p-4">
@@ -220,82 +221,105 @@ else if (state.gameState === 'lobby') {
   `;
 }
 
-  // PLAYING SCREEN
-  else if (state.gameState === 'playing') {
-    app.innerHTML = `
-      <div class="flex flex-col h-screen">
-        <div class="border-b-2 border-green-400 p-4">
-          <div>
-            <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
-            <div class="text-sm text-green-600">You are: ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
-          </div>
-        </div>
-
-        <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3">
-          ${state.messages.map(msg => {
-            if (msg.type === 'system') {
-              return `<div class="text-center text-green-600 text-sm italic">&gt; ${escapeHtml(msg.text)}</div>`;
-            }
-            if (msg.type === 'scenario') {
-              return `
-                <div class="border border-green-400 p-3 text-sm">
-                  <div class="text-green-600 mb-1">MISSION SITUATION:</div>
-                  ${escapeHtml(msg.text)}
-                </div>
-              `;
-            }
-            if (msg.type === 'message') {
-              const tag = msg.role === state.spotlightPlayer ? '[PRIMARY]' : '[SUPPORT]';
-              return `
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2">
-                    <span></span>
-                    <span class="font-bold">${escapeHtml(msg.role)}</span>
-                    <span class="text-xs text-green-600">${tag}</span>
-                  </div>
-                  <div class="pl-5">${escapeHtml(msg.text)}</div>
-                </div>
-              `;
-            }
-            return '';
-          }).join('')}
-        </div>
-
-        <div class="border-t-2 border-green-400 p-4">
-          <div class="flex gap-2">
-            <input
-              type="text"
-              id="messageInput"
-              placeholder="Type your transmission..."
-              class="flex-1 bg-black border-2 border-green-400 p-2 text-green-400 placeholder-green-600"
-              value="${state.inputMessage}"
-            />
-            <button onclick="sendMsg()" class="bg-green-400 text-black px-4 py-2 font-bold hover:bg-green-300 transition">
-              ▶
-            </button>
-          </div>
+// PLAYING SCREEN
+else if (state.gameState === 'playing') {
+  app.innerHTML = `
+    <div class="flex flex-col h-screen">
+      <!-- Header with context info -->
+      <div class="border-b-2 border-green-400 p-4">
+        <div class="flex justify-between">
+          <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
+          <div class="text-sm">You are: ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
         </div>
       </div>
-    `;
 
-    const input = document.getElementById('messageInput');
-    if (input) {
-      input.addEventListener('input', (e) => {
-        state.inputMessage = e.target.value;
-      });
-      input.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') window.sendMsg();
-      });
-      input.focus();
+      <!-- Terminal area -->
+      <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
+        <div id="messages"></div>
+        <div id="inputLine" class="terminal-line">
+          <span id="inputText"></span><span class="cursor">█</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  renderMessages();
+  setupInput();
+}}
+
+function renderMessages() {
+  const messagesDiv = document.getElementById('messages');
+  if (!messagesDiv) return;
+
+  messagesDiv.innerHTML = state.messages.map(msg => {
+    if (msg.type === 'system') {
+      return `<div class="terminal-line text-green-600">&gt; ${escapeHtml(msg.text)}</div>`;
     }
+    if (msg.type === 'scenario') {
+      return `<div class="terminal-line text-green-600">&gt; MISSION: ${escapeHtml(msg.text)}</div>`;
+    }
+    if (msg.type === 'message') {
+      // Show role prefix only for OTHER players' messages
+      if (msg.role === state.playerRole) {
+        return `<div class="terminal-line">${escapeHtml(msg.text)}</div>`;
+      } else {
+        return `<div class="terminal-line">[${escapeHtml(msg.role)}]: ${escapeHtml(msg.text)}</div>`;
+      }
+    }
+    return '';
+  }).join('');
+
+  scrollToBottom();
+}
+
+function scrollToBottom() {
+  const terminal = document.getElementById('terminal');
+  if (terminal) {
+    terminal.scrollTop = terminal.scrollHeight;
   }
 }
 
+function setupInput() {
+  const inputText = document.getElementById('inputText');
+  if (!inputText) return;
+
+  // Just update the display
+  inputText.textContent = state.inputMessage;
+}
+
+function handleKeydown(e) {
+  if (state.gameState !== 'playing') return;
+
+  const inputText = document.getElementById('inputText');
+  if (!inputText) return;
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sendMessage();
+  } else if (e.key === 'Backspace') {
+    e.preventDefault();
+    state.inputMessage = state.inputMessage.slice(0, -1);
+    inputText.textContent = state.inputMessage;
+  } else if (e.key.length === 1) {
+    // Only add printable characters
+    e.preventDefault();
+    state.inputMessage += e.key;
+    inputText.textContent = state.inputMessage;
+  }
+}
+
+ 
+
+
 // Global functions
 window.showScenarios = () => {
+  console.log('1. showScenarios called');
   state.scenarioOptions = getRandomScenarios();
+  console.log('2. scenarioOptions set:', state.scenarioOptions);
   state.gameState = 'selectScenario';
+  console.log('3. gameState set:', state.gameState);
   render();
+  console.log('4. render called');
 };
 
 window.showHowToPlay = () => {
@@ -333,6 +357,9 @@ window.beginMission = () => {
 window.sendMsg = () => {
   sendMessage();
 };
+
+// Set up global keyboard listener (only once)
+document.addEventListener('keydown', handleKeydown);
 
 // Initial render
 render();

@@ -167,7 +167,14 @@ export function listenToRoom(code) {
       state.messages.push({ id: child.key, ...child.val() });
     });
     state.messages.sort((a, b) => a.timestamp - b.timestamp);
-    window.renderApp && window.renderApp();
+    
+    // Only update messages if we're in playing state, don't re-render whole screen
+    if (state.gameState === 'playing' && window.renderMessages) {
+      window.renderMessages();
+    } else {
+      window.renderApp && window.renderApp();
+    }
+    
     scrollToBottom();
   });
 
@@ -190,15 +197,23 @@ export async function sendMessage() {
     return;
   }
 
+  const messageToSend = state.inputMessage.trim();
+  state.inputMessage = ''; // Clear immediately
+  
+  // Update the UI right away
+  const inputText = document.getElementById('inputText');
+  if (inputText) {
+    inputText.textContent = '';
+  }
+  
   const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
   await push(messagesRef, {
     type: 'message',
     role: state.playerRole,
-    text: state.inputMessage.trim(),
+    text: messageToSend,
     timestamp: Date.now()
   });
 
-  state.inputMessage = '';
   window.renderApp && window.renderApp();
 }
 

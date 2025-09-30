@@ -33,4 +33,4 @@ This is a digital adaptation of [**Apollo 47**](https://timhutchings.itch.io/ap4
 
 A hobby project by one person who is vibecoding and learning as he goes.
 
-Contributions, feedback, and bug reports welcome!
+Contributions, feedback, and bug reports welcome! Email Ben.   

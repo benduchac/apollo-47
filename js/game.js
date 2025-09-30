@@ -76,10 +76,9 @@ export async function createRoom(scenario) {
   await set(roomRef, {
     created: Date.now(),
     scenario: {
-      title: scenario.title,
-      setup: scenario.setup,
-      fullDescription: scenario.fullDescription,
-      roles: scenario.roles
+    title: scenario.title,
+    setup: scenario.setup,
+    roles: scenario.roles
     },
     spotlightPlayer: primaryRole,
     players: {

@@ -1,5 +1,6 @@
 import { getRandomScenarios } from './scenarios.js';
 import { state, getRoleLabel, getPlayerBriefing, createRoom, joinRoom, sendMessage } from './game.js';
+import { escapeHtml } from './utils.js';
 
 window.renderApp = render;
 
@@ -157,10 +158,10 @@ else if (state.gameState === 'howToPlay') {
                 onclick="selectScenario(${idx})"
               >
                 <div class="flex justify-between items-start">
-                  <div class="font-bold text-lg flex-1">${scenario.title}</div>
-                  <div class="text-xs text-green-600 ml-2">${scenario.playerCount} players</div>
+                  <div class="font-bold text-lg flex-1">${escapeHtml(scenario.title)}</div>
+                  <div class="text-xs text-green-600 ml-2">${escapeHtml(scenario.playerCount)} players</div>
                 </div>
-                <div class="text-sm text-green-600">${scenario.setup}</div>
+                <div class="text-sm text-green-600">${escapeHtml(scenario.setup)}</div>
               </div>
             `).join('')}
           </div>
@@ -182,23 +183,23 @@ else if (state.gameState === 'lobby') {
       <div class="w-full max-w-md space-y-6">
         <div class="text-center">
           <h2 class="text-2xl font-bold mb-2">MISSION BRIEFING</h2>
-          <div class="text-lg mb-4">Room: ${state.roomCode}</div>
+          <div class="text-lg mb-4">Room: ${escapeHtml(state.roomCode)}</div>
         </div>
         
         <div class="border-2 border-green-400 p-4 space-y-4">
           <div>
             <div class="text-sm text-green-600 mb-2">YOUR ROLE:</div>
-            <div class="text-xl">${getRoleLabel(state.playerRole, state.selectedScenario)}</div>
+            <div class="text-xl">${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
           </div>
 
           <div>
             <div class="text-sm text-green-600 mb-2">YOUR BRIEFING:</div>
-            <div class="text-sm">${getPlayerBriefing(state.playerRole, state.selectedScenario)}</div>
+            <div class="text-sm">${escapeHtml(getPlayerBriefing(state.playerRole, state.selectedScenario))}</div>
           </div>
           
           <div>
             <div class="text-sm text-green-600 mb-2">SITUATION:</div>
-            <div class="text-sm">${state.selectedScenario ? state.selectedScenario.setup : 'Loading...'}</div>
+            <div class="text-sm">${escapeHtml(state.selectedScenario ? state.selectedScenario.setup : 'Loading...')}</div>
           </div>
           
           <div>
@@ -207,7 +208,7 @@ else if (state.gameState === 'lobby') {
               ${state.players.map(player => `
                 <div class="flex items-center gap-2">
                   <span>📻</span>
-                  ${getRoleLabel(player, state.selectedScenario)}
+                  ${escapeHtml(getRoleLabel(player, state.selectedScenario))}
                 </div>
               `).join('')}
             </div>
@@ -232,21 +233,21 @@ else if (state.gameState === 'lobby') {
       <div class="flex flex-col h-screen">
         <div class="border-b-2 border-green-400 p-4">
           <div>
-            <div class="font-bold">APOLLO 47 - ${state.roomCode}</div>
-            <div class="text-sm text-green-600">You are: ${getRoleLabel(state.playerRole, state.selectedScenario)}</div>
+            <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
+            <div class="text-sm text-green-600">You are: ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
           </div>
         </div>
 
         <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3">
           ${state.messages.map(msg => {
             if (msg.type === 'system') {
-              return `<div class="text-center text-green-600 text-sm italic">&gt; ${msg.text}</div>`;
+              return `<div class="text-center text-green-600 text-sm italic">&gt; ${escapeHtml(msg.text)}</div>`;
             }
             if (msg.type === 'scenario') {
               return `
                 <div class="border border-green-400 p-3 text-sm">
                   <div class="text-green-600 mb-1">MISSION SITUATION:</div>
-                  ${msg.text}
+                  ${escapeHtml(msg.text)}
                 </div>
               `;
             }
@@ -256,10 +257,10 @@ else if (state.gameState === 'lobby') {
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
                     <span>📻</span>
-                    <span class="font-bold">${msg.role}</span>
+                    <span class="font-bold">${escapeHtml(msg.role)}</span>
                     <span class="text-xs text-green-600">${tag}</span>
                   </div>
-                  <div class="pl-5">${msg.text}</div>
+                  <div class="pl-5">${escapeHtml(msg.text)}</div>
                 </div>
               `;
             }

@@ -159,7 +159,7 @@ else if (state.gameState === 'howToPlay') {
               >
                 <div class="flex justify-between items-start">
                   <div class="font-bold text-lg flex-1">${escapeHtml(scenario.title)}</div>
-                  <div class="text-xs text-green-600 ml-2">${escapeHtml(scenario.playerCount)} players</div>
+                  <div class="text-xs text-green-600 ml-2">Recommended players: 2-${escapeHtml(scenario.playerCount)}</div>
                 </div>
                 <div class="text-sm text-green-600">${escapeHtml(scenario.setup)}</div>
               </div>
@@ -202,17 +202,10 @@ else if (state.gameState === 'lobby') {
             <div class="text-sm">${escapeHtml(state.selectedScenario ? state.selectedScenario.setup : 'Loading...')}</div>
           </div>
           
-          <div>
-            <div class="text-sm text-green-600 mb-2">CREW MANIFEST:</div>
-            <div class="space-y-1">
-              ${state.players.map(player => `
-                <div class="flex items-center gap-2">
-                  <span>📻</span>
-                  ${escapeHtml(getRoleLabel(player, state.selectedScenario))}
-                </div>
-              `).join('')}
-            </div>
-          </div>
+<div>
+  <div class="text-sm text-green-600 mb-2">CREW MANIFEST:</div>
+  <div class="space-y-1">${state.players.map(player => `<div class="flex items-center gap-2">${escapeHtml(getRoleLabel(player, state.selectedScenario))}</div>`).join('')}</div>
+</div>
         </div>
         
         <button onclick="beginMission()" class="w-full bg-green-400 text-black py-3 px-4 font-bold hover:bg-green-300 transition">
@@ -256,7 +249,7 @@ else if (state.gameState === 'lobby') {
               return `
                 <div class="space-y-1">
                   <div class="flex items-center gap-2">
-                    <span>📻</span>
+                    <span></span>
                     <span class="font-bold">${escapeHtml(msg.role)}</span>
                     <span class="text-xs text-green-600">${tag}</span>
                   </div>

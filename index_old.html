@@ -48,10 +48,10 @@
 
     function getRoleLabel(role) {
       const labels = {
-        'A1': '🚀 Astronaut 1 (Primary)',
-        'A2': '🚀 Astronaut 2',
-        'Base': '🎮 Mission Control',
-        'CDR': '⭐ Commander'
+        'A1': 'Astronaut 1 (Primary)',
+        'A2': 'Astronaut 2',
+        'Base': 'Mission Control',
+        'CDR': 'Commander'
       };
       return labels[role] || role;
     }
@@ -275,7 +275,7 @@
                   <div class="space-y-1">
                     ${state.players.map(player => `
                       <div class="flex items-center gap-2">
-                        <span>📻</span>
+                        <span></span>
                         ${getRoleLabel(player)}
                       </div>
                     `).join('')}
@@ -323,7 +323,7 @@
                   return `
                     <div class="space-y-1">
                       <div class="flex items-center gap-2">
-                        <span>📻</span>
+                        <span></span>
                         <span class="font-bold">${msg.role}</span>
                         <span class="text-xs text-green-600">${tag}</span>
                       </div>

@@ -43,11 +43,11 @@ export function getRoleLabel(role, scenario) {
   
   // Fallback to generic roles
   const labels = {
-    'A1': '🚀 Astronaut 1 (Primary)',
-    'A2': '🚀 Astronaut 2',
-    'Base': '🎮 Mission Control',
-    'CDR': '⭐ Commander',
-    'Support': '📻 Support'
+    'A1': 'Astronaut 1 (Primary)',
+    'A2': 'Astronaut 2',
+    'Base': 'Mission Control',
+    'CDR': 'Commander',
+    'Support': 'Support'
   };
   return labels[role] || role;
 }

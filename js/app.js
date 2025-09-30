@@ -1,5 +1,5 @@
 import { getRandomScenarios } from './scenarios.js';
-import { state, getRoleLabel, createRoom, getPlayerBriefing, joinRoom, sendMessage } from './game.js';
+import { state, getRoleLabel, createRoom, joinRoom, sendMessage } from './game.js';
 
 window.renderApp = render;
 

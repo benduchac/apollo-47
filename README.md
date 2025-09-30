@@ -16,7 +16,7 @@ It's collaborative storytelling with technical jargon, radio banter, and human-s
 
 ## Based on the TTRPG
 
-This is a digital adaptation of [**Apollo 47**](https://nocturnal-media.itch.io/apollo-47) by **Tim Hutchings**, made with his permission. If you enjoy this, please check out the original tabletop game—it's excellent.
+This is a digital adaptation of [**Apollo 47**](https://timhutchings.itch.io/ap47) by **Tim Hutchings**, made with his permission. If you enjoy this, please check out the original tabletop game—it's excellent.
 
 ---
 

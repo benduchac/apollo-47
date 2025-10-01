@@ -13,7 +13,8 @@ export const state = {
   spotlightPlayer: '',
   inputMessage: '',
   selectedScenario: null,
-  scenarioOptions: []
+  scenarioOptions: [],
+  lastRenderedMessageCount: 0,  // Add this line
 };
 
 export function getPlayerBriefing(role, scenario) {
@@ -167,14 +168,7 @@ export function listenToRoom(code) {
       state.messages.push({ id: child.key, ...child.val() });
     });
     state.messages.sort((a, b) => a.timestamp - b.timestamp);
-    
-    // Only update messages if we're in playing state, don't re-render whole screen
-    if (state.gameState === 'playing' && window.renderMessages) {
-      window.renderMessages();
-    } else {
-      window.renderApp && window.renderApp();
-    }
-    
+    window.renderApp && window.renderApp();
     scrollToBottom();
   });
 
@@ -197,23 +191,15 @@ export async function sendMessage() {
     return;
   }
 
-  const messageToSend = state.inputMessage.trim();
-  state.inputMessage = ''; // Clear immediately
-  
-  // Update the UI right away
-  const inputText = document.getElementById('inputText');
-  if (inputText) {
-    inputText.textContent = '';
-  }
-  
   const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
   await push(messagesRef, {
     type: 'message',
     role: state.playerRole,
-    text: messageToSend,
+    text: state.inputMessage.trim(),
     timestamp: Date.now()
   });
 
+  state.inputMessage = '';
   window.renderApp && window.renderApp();
 }
 

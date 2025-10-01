@@ -223,29 +223,31 @@ else if (state.gameState === 'lobby') {
 
 // PLAYING SCREEN
 else if (state.gameState === 'playing') {
-  app.innerHTML = `
-    <div class="flex flex-col h-screen">
-      <!-- Header with context info -->
-      <div class="border-b-2 border-green-400 p-4">
-        <div class="flex justify-between">
-          <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
-          <div class="text-sm">You are: ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
+  // Only set innerHTML if we're entering playing state for the first time
+  if (!document.getElementById('terminal')) {
+    app.innerHTML = `
+      <div class="flex flex-col h-screen">
+        <div class="border-b-2 border-green-400 p-4">
+          <div class="flex justify-between">
+            <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
+            <div class="text-sm">You are: ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
+          </div>
+        </div>
+
+        <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
+          <div id="messages"></div>
+          <div id="inputLine" class="terminal-line">
+            <span id="inputText"></span><span class="cursor">█</span>
+          </div>
         </div>
       </div>
-
-      <!-- Terminal area -->
-      <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
-        <div id="messages"></div>
-        <div id="inputLine" class="terminal-line">
-          <span id="inputText"></span><span class="cursor">█</span>
-        </div>
-      </div>
-    </div>
-  `;
-
+    `;
+  }
+  
   renderMessages();
   setupInput();
-}}
+}
+}
 
 function renderMessages() {
   const messagesDiv = document.getElementById('messages');
@@ -259,7 +261,6 @@ function renderMessages() {
       return `<div class="terminal-line text-green-600">&gt; MISSION: ${escapeHtml(msg.text)}</div>`;
     }
     if (msg.type === 'message') {
-      // Show role prefix only for OTHER players' messages
       if (msg.role === state.playerRole) {
         return `<div class="terminal-line">${escapeHtml(msg.text)}</div>`;
       } else {
@@ -277,6 +278,20 @@ function scrollToBottom() {
   if (terminal) {
     terminal.scrollTop = terminal.scrollHeight;
   }
+}
+function animateMessage(element, text, speed = 50) {
+  let index = 0;
+  element.textContent = '';
+  
+  const interval = setInterval(() => {
+    if (index < text.length) {
+      element.textContent += text[index];
+      index++;
+      scrollToBottom();
+    } else {
+      clearInterval(interval);
+    }
+  }, speed);
 }
 
 function setupInput() {

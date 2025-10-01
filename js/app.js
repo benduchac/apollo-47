@@ -253,24 +253,92 @@ function renderMessages() {
   const messagesDiv = document.getElementById('messages');
   if (!messagesDiv) return;
 
-  messagesDiv.innerHTML = state.messages.map(msg => {
-    if (msg.type === 'system') {
-      return `<div class="terminal-line text-green-600">&gt; ${escapeHtml(msg.text)}</div>`;
-    }
-    if (msg.type === 'scenario') {
-      return `<div class="terminal-line text-green-600">&gt; MISSION: ${escapeHtml(msg.text)}</div>`;
-    }
-    if (msg.type === 'message') {
-      if (msg.role === state.playerRole) {
-        return `<div class="terminal-line">${escapeHtml(msg.text)}</div>`;
+  const previousCount = state.lastRenderedMessageCount || 0;
+  const currentCount = state.messages.length;
+
+  // If this is the first render, show all messages instantly
+  if (previousCount === 0) {
+    messagesDiv.innerHTML = state.messages.map(msg => formatMessage(msg)).join('');
+    state.lastRenderedMessageCount = currentCount;
+    scrollToBottom();
+    return;
+  }
+
+  // Only animate new messages
+  if (currentCount > previousCount) {
+    const newMessages = state.messages.slice(previousCount);
+    
+    newMessages.forEach((msg) => {
+      const messageElement = document.createElement('div');
+      messageElement.className = 'terminal-line';
+      
+      const formattedText = formatMessage(msg);
+      messagesDiv.appendChild(messageElement);
+      
+      // Animate messages with prefixes (other players), show instantly otherwise (your messages)
+      if (formattedText.includes('[') || formattedText.includes('&gt;')) {
+        animateMessage(messageElement, formattedText, 50);
       } else {
-        return `<div class="terminal-line">[${escapeHtml(msg.role)}]: ${escapeHtml(msg.text)}</div>`;
+        messageElement.innerHTML = formattedText;
+        scrollToBottom();
       }
-    }
-    return '';
-  }).join('');
+    });
+    
+    state.lastRenderedMessageCount = currentCount;
+  }
 
   scrollToBottom();
+}
+
+// Helper function to format a message
+function formatMessage(msg) {
+  if (msg.type === 'system') {
+    return `<div class="terminal-line text-green-600">&gt; ${escapeHtml(msg.text)}</div>`;
+  }
+  if (msg.type === 'scenario') {
+    return `<div class="terminal-line text-green-600">&gt; MISSION: ${escapeHtml(msg.text)}</div>`;
+  }
+  if (msg.type === 'message') {
+    if (msg.role === state.playerRole) {
+      return `<div class="terminal-line">${escapeHtml(msg.text)}</div>`;
+    } else {
+      return `<div class="terminal-line">[${escapeHtml(msg.role)}]: ${escapeHtml(msg.text)}</div>`;
+    }
+  }
+  return '';
+}
+
+// Updated animation function to handle HTML content
+function animateMessage(element, htmlContent, speed = 20) {
+  // For messages with HTML tags (like role labels), we need to extract just the text
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = htmlContent;
+  const textToAnimate = tempDiv.textContent || tempDiv.innerText;
+  
+  // Determine if this has a role prefix
+  const hasRolePrefix = htmlContent.includes('[');
+  let rolePrefix = '';
+  let messageText = textToAnimate;
+  
+  if (hasRolePrefix && textToAnimate.includes(']:')) {
+    const splitPoint = textToAnimate.indexOf(']:') + 2;
+    rolePrefix = textToAnimate.substring(0, splitPoint);
+    messageText = textToAnimate.substring(splitPoint);
+  }
+  
+  // Show role prefix instantly, animate the message
+  element.textContent = rolePrefix;
+  let index = 0;
+  
+  const interval = setInterval(() => {
+    if (index < messageText.length) {
+      element.textContent = rolePrefix + messageText.substring(0, index + 1);
+      index++;
+      scrollToBottom();
+    } else {
+      clearInterval(interval);
+    }
+  }, speed);
 }
 
 function scrollToBottom() {
@@ -278,21 +346,6 @@ function scrollToBottom() {
   if (terminal) {
     terminal.scrollTop = terminal.scrollHeight;
   }
-}
-
-function animateMessage(element, text, speed = 50) {
-  let index = 0;
-  element.textContent = '';
-  
-  const interval = setInterval(() => {
-    if (index < text.length) {
-      element.textContent += text[index];
-      index++;
-      scrollToBottom();
-    } else {
-      clearInterval(interval);
-    }
-  }, speed);
 }
 
 function setupInput() {

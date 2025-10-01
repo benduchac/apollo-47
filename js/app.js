@@ -279,6 +279,7 @@ function scrollToBottom() {
     terminal.scrollTop = terminal.scrollHeight;
   }
 }
+
 function animateMessage(element, text, speed = 50) {
   let index = 0;
   element.textContent = '';
@@ -311,6 +312,7 @@ function handleKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
     sendMessage();
+    inputText.textContent = ''; //clear the input after sending
   } else if (e.key === 'Backspace') {
     e.preventDefault();
     state.inputMessage = state.inputMessage.slice(0, -1);
@@ -324,8 +326,6 @@ function handleKeydown(e) {
 }
 
  
-
-
 // Global functions
 window.showScenarios = () => {
   console.log('1. showScenarios called');

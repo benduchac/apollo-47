@@ -200,7 +200,8 @@ export async function sendMessage() {
   });
 
   state.inputMessage = '';
-  window.renderApp && window.renderApp();
+  // Not calling renderapp here, but call it from here 
+  //window.renderApp && window.renderApp();
 }
 
 function scrollToBottom() {

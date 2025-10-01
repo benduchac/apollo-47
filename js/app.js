@@ -221,6 +221,7 @@ else if (state.gameState === 'lobby') {
   `;
 }
 
+
 // PLAYING SCREEN
 else if (state.gameState === 'playing') {
   // Only set innerHTML if we're entering playing state for the first time
@@ -228,8 +229,13 @@ else if (state.gameState === 'playing') {
     app.innerHTML = `
       <div class="flex flex-col h-screen">
         <div class="border-b-2 border-green-400 p-4">
-          <div class="flex justify-between">
-            <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
+              <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">
+                COPY
+              </button>
+            </div>
             <div class="text-sm">You are: ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
           </div>
         </div>
@@ -515,6 +521,27 @@ window.sendMsg = () => {
 window.renderTypingIndicator = renderTypingIndicator;
 
 window.renderSendStatus = renderSendStatus;
+
+window.copyRoomCode = async () => {
+  const button = document.getElementById('copyButton');
+  if (!button) return;
+  
+  try {
+    await navigator.clipboard.writeText(state.roomCode);
+    // Show success feedback
+    const originalText = button.textContent;
+    button.textContent = 'COPIED!';
+    setTimeout(() => {
+      button.textContent = originalText;
+    }, 1500);
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    button.textContent = 'ERROR';
+    setTimeout(() => {
+      button.textContent = 'COPY';
+    }, 1500);
+  }
+};
 
 // Set up global keyboard listener (only once)
 document.addEventListener('keydown', handleKeydown);

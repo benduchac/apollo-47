@@ -1,6 +1,8 @@
 import { database } from './firebase-config.js';
 import { ref, set, push, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
+let typingTimeout = null;
+
 export const ROLES = ['A1', 'Base', 'A2', 'CDR'];
 
 export const state = {
@@ -15,6 +17,8 @@ export const state = {
   selectedScenario: null,
   scenarioOptions: [],
   lastRenderedMessageCount: 0,  // Add this line
+  typingPlayers: [], // NEW: Track who's typing
+  sendStatus: null    // NEW: Track send status ('sending', 'sent', null)
 };
 
 export function getPlayerBriefing(role, scenario) {
@@ -179,6 +183,8 @@ export function listenToRoom(code) {
     });
     window.renderApp && window.renderApp();
   });
+  
+  listenToTyping(code); // NEW: Start listening to typing indicators
 }
 
 export async function sendMessage() {
@@ -191,17 +197,86 @@ export async function sendMessage() {
     return;
   }
 
+  const messageToSend = state.inputMessage.trim();
+  state.inputMessage = '';
+  
+  // Clear typing status
+  await updateTypingStatus(false);
+
   const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
   await push(messagesRef, {
     type: 'message',
     role: state.playerRole,
-    text: state.inputMessage.trim(),
+    text: messageToSend,
     timestamp: Date.now()
   });
 
-  state.inputMessage = '';
-  // Not calling renderapp here, but call it from here 
-  //window.renderApp && window.renderApp();
+  // Now show the send status animation
+  state.sendStatus = 'sending';
+  updateSendStatusDisplay();
+  
+  setTimeout(() => {
+    state.sendStatus = 'sent';
+    updateSendStatusDisplay();
+    
+    setTimeout(() => {
+      state.sendStatus = null;
+      updateSendStatusDisplay();
+    }, 300);
+  }, 600);
+}
+
+function updateSendStatusDisplay() {
+  if (window.updateSendStatusDisplay) {
+    window.updateSendStatusDisplay();
+  }
+}
+
+export async function updateTypingStatus(isTyping) {
+  if (!state.roomCode) return;
+  
+  const typingRef = ref(database, `rooms/${state.roomCode}/typing/${state.playerId}`);
+  
+  if (isTyping) {
+    await set(typingRef, {
+      role: state.playerRole,
+      timestamp: Date.now()
+    });
+    
+    // Clear existing timeout
+    if (typingTimeout) clearTimeout(typingTimeout);
+    
+    // Set timeout to clear typing status after 3 seconds
+    typingTimeout = setTimeout(async () => {
+      await set(typingRef, null);
+    }, 3000);
+  } else {
+    await set(typingRef, null);
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+      typingTimeout = null;
+    }
+  }
+}
+
+export function listenToTyping(code) {
+  const typingRef = ref(database, `rooms/${code}/typing`);
+  
+  onValue(typingRef, (snapshot) => {
+    state.typingPlayers = [];
+    snapshot.forEach((child) => {
+      const data = child.val();
+      // Only show typing for OTHER players
+      if (child.key !== state.playerId && data) {
+        state.typingPlayers.push(data.role);
+      }
+    });
+    
+    // Update just the typing indicator
+    if (window.renderTypingIndicator) {
+      window.renderTypingIndicator();
+    }
+  });
 }
 
 function scrollToBottom() {

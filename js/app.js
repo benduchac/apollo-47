@@ -1,5 +1,5 @@
 import { getRandomScenarios } from './scenarios.js';
-import { state, getRoleLabel, getPlayerBriefing, createRoom, joinRoom, sendMessage } from './game.js';
+import { state, getRoleLabel, getPlayerBriefing, createRoom, joinRoom, sendMessage, updateTypingStatus } from './game.js';
 import { escapeHtml } from './utils.js';
 
 window.renderApp = render;
@@ -236,8 +236,9 @@ else if (state.gameState === 'playing') {
 
         <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
           <div id="messages"></div>
+          <div id="typingIndicator"></div>
           <div id="inputLine" class="terminal-line">
-            <span id="inputText"></span><span class="cursor">█</span>
+              <span id="inputText"></span><span class="cursor">█</span>
           </div>
         </div>
       </div>
@@ -275,11 +276,12 @@ function renderMessages() {
       const formattedText = formatMessage(msg);
       messagesDiv.appendChild(messageElement);
       
-      // Animate messages with prefixes (other players), show instantly otherwise (your messages)
-      if (formattedText.includes('[') || formattedText.includes('&gt;')) {
+      // Animate messages from OTHER players (not marked as own-message)
+      // Show our own messages instantly
+      if (msg.role !== state.playerRole) {
         animateMessage(messageElement, formattedText, 50);
       } else {
-        messageElement.innerHTML = formattedText;
+        messageElement.outerHTML = formattedText;
         scrollToBottom();
       }
     });
@@ -300,7 +302,7 @@ function formatMessage(msg) {
   }
   if (msg.type === 'message') {
     if (msg.role === state.playerRole) {
-      return `<div class="terminal-line">${escapeHtml(msg.text)}</div>`;
+      return `<div class="terminal-line" data-own-message="true">${escapeHtml(msg.text)}</div>`;
     } else {
       return `<div class="terminal-line">[${escapeHtml(msg.role)}]: ${escapeHtml(msg.text)}</div>`;
     }
@@ -352,9 +354,69 @@ function setupInput() {
   const inputText = document.getElementById('inputText');
   if (!inputText) return;
 
-  // Just update the display
   inputText.textContent = state.inputMessage;
+  renderTypingIndicator();
 }
+
+function renderTypingIndicator() {
+  const indicator = document.getElementById('typingIndicator');
+  if (!indicator) return;
+  
+  if (state.typingPlayers.length > 0) {
+    const roles = state.typingPlayers.map(role => `[${escapeHtml(role)}]`).join('');
+    indicator.innerHTML = `<div class="terminal-line text-green-600 typing-dots">${roles}<span class="dots">...</span></div>`;
+  } else {
+    indicator.innerHTML = '';
+  }
+}
+
+function renderSendStatus() {
+  const messagesDiv = document.getElementById('messages');
+  if (!messagesDiv) return;
+  
+  const lastMessageElement = messagesDiv.lastElementChild;
+  if (!lastMessageElement) return;
+  
+  const lastMessage = state.messages[state.messages.length - 1];
+  if (!lastMessage || lastMessage.role !== state.playerRole) return;
+  
+  // Update the last message with current send status
+  if (state.sendStatus === 'sending') {
+    lastMessageElement.innerHTML = `${escapeHtml(lastMessage.text)} <span class="text-green-600">[sending...]</span>`;
+  } else if (state.sendStatus === 'sent') {
+    lastMessageElement.innerHTML = `${escapeHtml(lastMessage.text)} <span class="text-green-600">[sent ✓]</span>`;
+  } else {
+    lastMessageElement.innerHTML = `${escapeHtml(lastMessage.text)}`;
+  }
+}
+
+function updateSendStatusDisplay() {
+  const messagesDiv = document.getElementById('messages');
+  if (!messagesDiv) return;
+  
+  // Find the last message that's marked as ours
+  const messageElements = messagesDiv.querySelectorAll('[data-own-message="true"]');
+  const lastOwnMessage = messageElements[messageElements.length - 1];
+  
+  if (!lastOwnMessage) return;
+  
+  // Get the original text (strip any existing status)
+  const originalText = lastOwnMessage.textContent
+    .replace(' [sending...]', '')
+    .replace(' [sent ✓]', '');
+  
+  // Append appropriate status
+  if (state.sendStatus === 'sending') {
+    lastOwnMessage.textContent = originalText + ' [sending...]';
+  } else if (state.sendStatus === 'sent') {
+    lastOwnMessage.textContent = originalText + ' [sent ✓]';
+  } else {
+    lastOwnMessage.textContent = originalText;
+  }
+}
+
+window.updateSendStatusDisplay = updateSendStatusDisplay;
+
 
 function handleKeydown(e) {
   if (state.gameState !== 'playing') return;
@@ -362,7 +424,7 @@ function handleKeydown(e) {
   const inputText = document.getElementById('inputText');
   if (!inputText) return;
 
-    // Let browser shortcuts through (Ctrl, Cmd, Alt combinations)
+  // Let browser shortcuts through (Ctrl, Cmd, Alt combinations)
   if (e.ctrlKey || e.metaKey || e.altKey) {
     return;
   }
@@ -370,19 +432,28 @@ function handleKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
     sendMessage();
-    inputText.textContent = ''; //clear the input after sending
+    inputText.textContent = ''; // clear the input after sending
   } else if (e.key === 'Backspace') {
     e.preventDefault();
     state.inputMessage = state.inputMessage.slice(0, -1);
     inputText.textContent = state.inputMessage;
+    
+    // Update typing status
+    if (state.inputMessage.length === 0) {
+      updateTypingStatus(false);
+    } else {
+      updateTypingStatus(true);
+    }
   } else if (e.key.length === 1) {
     // Only add printable characters
     e.preventDefault();
     state.inputMessage += e.key;
     inputText.textContent = state.inputMessage;
+    
+    // Update typing status
+    updateTypingStatus(true);
   }
 }
-
  
 // Global functions
 window.showScenarios = () => {
@@ -439,6 +510,11 @@ window.beginMission = () => {
 window.sendMsg = () => {
   sendMessage();
 };
+
+// Make these available globally
+window.renderTypingIndicator = renderTypingIndicator;
+
+window.renderSendStatus = renderSendStatus;
 
 // Set up global keyboard listener (only once)
 document.addEventListener('keydown', handleKeydown);

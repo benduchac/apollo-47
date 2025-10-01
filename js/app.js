@@ -32,8 +32,8 @@ function render() {
                 placeholder="ENTER ROOM CODE"
                 class="w-full bg-black border-2 border-green-400 p-3 text-green-400 placeholder-green-600"
               />
-              <button onclick="joinWithCode()" class="w-full border-2 border-green-400 text-green-400 py-2 px-4 hover:bg-green-400 hover:text-black transition">
-                JOIN MISSION
+              <button id="joinButton" onclick="joinWithCode()" class="w-full border-2 border-green-400 text-green-400 py-2 px-4 hover:bg-green-400 hover:text-black transition">
+              JOIN MISSION
               </button>
             </div>
           </div>
@@ -309,6 +309,11 @@ function handleKeydown(e) {
   const inputText = document.getElementById('inputText');
   if (!inputText) return;
 
+    // Let browser shortcuts through (Ctrl, Cmd, Alt combinations)
+  if (e.ctrlKey || e.metaKey || e.altKey) {
+    return;
+  }
+
   if (e.key === 'Enter') {
     e.preventDefault();
     sendMessage();
@@ -355,13 +360,22 @@ window.backToStart = () => {
 
 window.joinWithCode = async () => {
   const input = document.getElementById('joinInput');
+  const button = document.getElementById('joinButton');
   const code = input?.value?.trim().toUpperCase();
-  if (code && code.length > 0) {
-    await joinRoom(code);
-    render();
-  } else {
+  
+  if (!code || code.length === 0) {
     alert('Please enter a room code');
+    return;
   }
+  
+  // Disable button and show loading state
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'JOINING...';
+  }
+  
+  await joinRoom(code);
+  render();
 };
 
 window.beginMission = () => {

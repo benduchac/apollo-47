@@ -161,11 +161,13 @@ ${state.scenarioOptions.map((scenario, idx) => `
     <div class="font-bold text-lg">${escapeHtml(scenario.title)}</div>
     <div class="text-sm text-green-600">${escapeHtml(scenario.setup)}</div>
     
-    ${scenario.technicalDetails ? `
-      <div class="text-xs space-y-1 border-t border-green-600 pt-2">
-        ${scenario.technicalDetails.slice(0, 3).map(detail => 
-          `<div class="text-green-600">• ${escapeHtml(detail)}</div>`
-        ).join('')}
+    ${scenario.roles && scenario.roles[0] ? `
+      <div class="text-xs border-t border-green-600 pt-2 space-y-1">
+        <div>
+          <span class="text-green-600">You'll play as:</span> 
+          <span class="text-green-400">${escapeHtml(scenario.roles[0].label)}</span>
+        </div>
+        <div class="text-green-500">${escapeHtml(scenario.roles[0].briefing)}</div>
       </div>
     ` : ''}
   </div>

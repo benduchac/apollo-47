@@ -1,4 +1,4 @@
-import { getRandomScenarios } from './scenarios.js';
+import { getRandomScenarios } from './scenarios-enhanced.js';
 import { state, getRoleLabel, getPlayerBriefing, createRoom, joinRoom, sendMessage, updateTypingStatus } from './game.js';
 import { escapeHtml } from './utils.js';
 
@@ -153,18 +153,23 @@ else if (state.gameState === 'howToPlay') {
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            ${state.scenarioOptions.map((scenario, idx) => `
-              <div 
-                class="scenario-card border-2 border-green-400 p-4 space-y-2"
-                onclick="selectScenario(${idx})"
-              >
-                <div class="flex justify-between items-start">
-                  <div class="font-bold text-lg flex-1">${escapeHtml(scenario.title)}</div>
-                  <div class="text-xs text-green-600 ml-2">Recommended players: 2-${escapeHtml(scenario.playerCount)}</div>
-                </div>
-                <div class="text-sm text-green-600">${escapeHtml(scenario.setup)}</div>
-              </div>
-            `).join('')}
+${state.scenarioOptions.map((scenario, idx) => `
+  <div 
+    class="scenario-card border-2 border-green-400 p-4 space-y-3"
+    onclick="selectScenario(${idx})"
+  >
+    <div class="font-bold text-lg">${escapeHtml(scenario.title)}</div>
+    <div class="text-sm text-green-600">${escapeHtml(scenario.setup)}</div>
+    
+    ${scenario.technicalDetails ? `
+      <div class="text-xs space-y-1 border-t border-green-600 pt-2">
+        ${scenario.technicalDetails.slice(0, 3).map(detail => 
+          `<div class="text-green-600">• ${escapeHtml(detail)}</div>`
+        ).join('')}
+      </div>
+    ` : ''}
+  </div>
+`).join('')}
           </div>
           
           <div class="text-center">

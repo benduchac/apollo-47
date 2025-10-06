@@ -101,7 +101,7 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "FieldScientist", 
+        id: "Astronaut 1", 
         label: "Field Astronaut", 
         isPrimary: true,
         context: "You're standing in a crater with a mallet and increasingly bent stakes scattered around you. Your arms are getting tired.",
@@ -145,7 +145,7 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "DocAstronaut", 
+        id: "Astronaut 1", 
         label: "EVA Astronaut", 
         isPrimary: true,
         context: "You're fighting with a stuck mechanism while wearing thick pressure suit gloves. The sun angle is changing. You can see the perfect shot right in front of you.",
@@ -233,7 +233,7 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Geophysicist", 
+        id: "Astronaut1", 
         label: "Field Astronaut", 
         isPrimary: true,
         context: "You're carrying a sensitive scientific instrument across the lunar surface, trying not to jostle it. Every step you take registers as a seismic event. This is absurd.",
@@ -247,7 +247,7 @@ export const NORMAL_SCENARIOS = [
         briefing: "Guide them to the best placement location based on geological data. You're looking for bedrock, minimal regolith, stable terrain. Tell them where to walk."
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut2", 
         label: "Astronaut 2", 
         isPrimary: false,
         context: "You're a hundred meters away with visual on the terrain. You can see hazards they might miss while focused on the equipment.",
@@ -277,17 +277,17 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "LifeSupport", 
-        label: "Life Support Tech", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
-        context: "You're in the zero-g section, floating near plumbing, surrounded by tools attached to your belt with lanyards. One wrench is slowly drifting away.",
+        context: "You're in the zero-g section of the orbiting lunar waystation, floating near plumbing, surrounded by tools attached to your belt with lanyards. One wrench is slowly drifting away.",
         briefing: "Disassemble the filter assembly without contaminating anything. In zero gravity. Don't drop tools into the water system. Don't lose the wrench that's drifting away."
       },
       { 
         id: "SysEngineer", 
         label: "Systems Engineer", 
         isPrimary: false,
-        context: "You're reading the maintenance checklist. It's 23 steps. Someone put a checkmark next to step 7 but you don't know when or why.",
+        context: "You're in the waystation, reading the maintenance checklist. It's 23 steps. The instructions don't quite seem to match what the astronaut is seeing.",
         briefing: "Walk them through the procedure step by step. Keep track of where they are in the sequence. Try not to skip steps."
       },
       { 
@@ -321,8 +321,8 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Astronaut", 
-        label: "Astronaut", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're suited up, checking every seal and connection you can reach on your own suit. This is awkward. The helmet makes it hard to see your own torso.",
         briefing: "Your suit is leaking. Slowly. You're supposed to go outside in half an hour. Find the leak, or don't go outside, or go outside anyway and hope for the best."
@@ -335,10 +335,10 @@ export const NORMAL_SCENARIOS = [
         briefing: "Help diagnose the leak source. Work systematically through test procedures. 847 possible seal points. Start with the likely ones."
       },
       { 
-        id: "CrewMember", 
-        label: "Crew Member", 
+        id: "Astronaut2", 
+        label: "Astronaut 2", 
         isPrimary: false,
-        context: "You're cross-referencing the maintenance manual. The index is organized alphabetically but 'pressure' has seventeen sub-entries.",
+        context: "You're cross-referencing the maintenance checklist written on the pad on your forearm. The index is organized but there is nothing labeled 'leak' or 'pressure'",
         briefing: "Find the pressure diagnostics checklist. Read it out loud. Help them work through it systematically."
       },
       { 
@@ -365,7 +365,7 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Engineer", 
+        id: "Astronaut1", 
         label: "EVA Astronaut", 
         isPrimary: true,
         context: "You're standing on the solar array platform with special brushes, trying to clean panels without scratching them. The dust clings to everything. Your gloves are already coated.",
@@ -379,7 +379,7 @@ export const NORMAL_SCENARIOS = [
         briefing: "Watch the efficiency readings. Tell them if the cleaning is actually working. If efficiency drops, they're scratching the coating. Stop them."
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut2", 
         label: "Astronaut 2", 
         isPrimary: false,
         context: "You're watching for cable routing hazards from ground level. There are a lot of cables up there. They're all the same color.",
@@ -409,7 +409,7 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Maintenance", 
+        id: "Astronaut 1", 
         label: "EVA Astronaut", 
         isPrimary: true,
         context: "You're applying metallic tape in vacuum while the blanket flaps around in a non-existent breeze. Wait, why is it flapping? It shouldn't be flapping. Physics is weird.",
@@ -419,18 +419,18 @@ export const NORMAL_SCENARIOS = [
         id: "ThermalEng", 
         label: "Thermal Engineer", 
         isPrimary: false,
-        context: "You're monitoring temperature climb on a screen. The graph is trending upward in a way you don't like.",
+        context: "You're monitoring temperature climb on a screen from the moon base engineering module. The graph is trending upward in a way you don't like.",
         briefing: "Track temperature and calculate time remaining before damage. Keep them updated. The math is simple but the stakes are expensive equipment."
       },
       { 
         id: "MaterialsSpec", 
         label: "Materials Specialist", 
         isPrimary: false,
-        context: "You know the properties of this tape and blanket material because you read the specs once. You think you remember them correctly.",
+        context: "You're sitting next to the Thermal Engineer. You know the properties of this tape and blanket material because you read the specs once. You think you remember them correctly.",
         briefing: "Advise on tape application technique. The adhesive works differently in vacuum. Or does it? You're pretty sure you're right."
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut2", 
         label: "Astronaut 2", 
         isPrimary: false,
         context: "You're helping hold the blanket steady while they work. This is harder than it looks. Your arms are getting tired.",
@@ -453,8 +453,8 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Geophysicist", 
-        label: "Field Astronaut", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're standing next to the magnetometer in a crater, staring at readings that don't make any sense. You've checked the connections twice. The moon isn't supposed to have this kind of magnetic field.",
         briefing: "The readings are impossible. Either the equipment is broken or your textbooks are wrong. Troubleshoot this or just log it as anomalous and move on."
@@ -474,7 +474,7 @@ export const NORMAL_SCENARIOS = [
         briefing: "Diagnose potential hardware issues. Check calibration history, sensor integrity, power systems. Find the technical explanation."
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut 2", 
         label: "Astronaut 2", 
         isPrimary: false,
         context: "You're wondering if they're standing on the cable. You've seen weird readings from cable pressure before.",
@@ -497,15 +497,15 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Engineer", 
-        label: "Hab Engineer", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're the unlucky one investigating this. You're crouched next to the waste management compartment with a flashlight and a growing sense of dread. The smell is getting worse.",
         briefing: "Something is wrong with the waste system. It's making a noise. There's a smell. You really, really don't want to make this worse. Diagnose carefully."
       },
       { 
-        id: "LifeSupport", 
-        label: "Life Support", 
+        id: "Houston", 
+        label: "Ground Control (Houston)", 
         isPrimary: false,
         context: "You're reading system pressures and flow rates remotely. Everything looks normal on your screen, which somehow makes it more concerning.",
         briefing: "Help diagnose what's malfunctioning based on telemetry. The numbers look fine but clearly something isn't fine."
@@ -522,7 +522,7 @@ export const NORMAL_SCENARIOS = [
         label: "Commander", 
         isPrimary: false,
         context: "You're requesting status updates from a safe distance. You're reviewing emergency procedures just in case.",
-        briefing: "Monitor the situation from Mission Control. Determine if this requires emergency protocols. Try not to overreact. Try."
+        briefing: "Monitor the situation from the other side of the hab. Determine if this requires emergency protocols. Try not to overreact. Try."
       }
     ]
   },
@@ -541,7 +541,7 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Scientist", 
+        id: "Astronaut 1", 
         label: "Lab Astronaut", 
         isPrimary: true,
         context: "You're in the lab, staring at two pieces of equipment that disagree with each other. Or agree with each other incorrectly. You can't tell which is broken.",
@@ -555,7 +555,7 @@ export const NORMAL_SCENARIOS = [
         briefing: "Walk them through systematic troubleshooting. Start with the simple stuff. Work through it methodically. Try not to sound frustrated."
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut2", 
         label: "Astronaut 2", 
         isPrimary: false,
         context: "You're locating backup equipment in the storage cache. The inventory system is organized by someone who doesn't work here anymore.",
@@ -585,11 +585,11 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "SysTech", 
-        label: "Systems Tech", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're working through a checklist with a leak detector that beeps. Everything beeps a little. You're on seal point 34 of 847. This is going to take a while.",
-        briefing: "Find the leak before pressure drops to dangerous levels. You have 847 seal points to check. Work systematically. Try not to think about how long this will take."
+        briefing: "Find the leak before pressure drops to dangerous levels. You have 847 seal points to check. You don't like knowing there's a little hole venting into space."
       },
       { 
         id: "LifeSupportEng", 
@@ -599,10 +599,10 @@ export const NORMAL_SCENARIOS = [
         briefing: "Calculate how much time they have. Monitor the decay rate. If it suddenly gets worse, that means something changed. Alert them immediately."
       },
       { 
-        id: "CrewMember", 
-        label: "Crew Member", 
+        id: "Astronaut2", 
+        label: "Astronaut 2", 
         isPrimary: false,
-        context: "You're isolating modules to narrow down the search area. Each module has a door that squeaks when you close it.",
+        context: "You're isolating modules to narrow down the search area. Each module has a door that can seal. You're cut off from Astronaut 1 and are communicating by radio.",
         briefing: "Help systematically eliminate sections. Close bulkhead doors, monitor pressure in each section. Narrow down where the leak is."
       },
       { 
@@ -629,8 +629,8 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "FieldGeologist", 
-        label: "Field Astronaut", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're trying to extract a rock that's too big without damaging it or the container. Your gloves make fine manipulation nearly impossible. The rock is wedged in there really well.",
         briefing: "The sample is stuck. You could break the rock, or break the container, or give up. Figure out which option is least bad."
@@ -643,7 +643,7 @@ export const NORMAL_SCENARIOS = [
         briefing: "Assess the scientific value of this specific rock. Is it worth sacrificing the container? Be honest about whether this rock is actually special."
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut2", 
         label: "Astronaut 2", 
         isPrimary: false,
         context: "You're suggesting tools that might help. The tool selection out here is limited but creative application is encouraged.",
@@ -668,13 +668,13 @@ export const NORMAL_SCENARIOS = [
       "Print quality needed: clear tread pattern, depth measurement",
       "Completed photos: 2 of 12",
       "Contaminated prints: 7 so far",
-      "Camera memory remaining: 67 frames"
+      "Film remaining: 67 frames"
     ],
     
     roles: [
       { 
-        id: "Photographer", 
-        label: "EVA Astronaut", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're trying to document pristine bootprints without making new ones. This is harder than it sounds. You keep stepping in the wrong place. The moon is covered in your footprints.",
         briefing: "Take photos of undisturbed bootprints. Don't step on the undisturbed bootprints. This is more difficult than anyone anticipated."
@@ -717,8 +717,8 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "CommsOfficer", 
-        label: "Communications Officer", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're tracking down interference with a handheld receiver that beeps when it gets close to the source. Everything in the hab is beeping a little. You're going room by room.",
         briefing: "Find the source of the interference before it disrupts critical communications. Walk around with the detector. Listen for patterns. Narrow it down."
@@ -731,15 +731,15 @@ export const NORMAL_SCENARIOS = [
         briefing: "Help them understand the interference pattern. When is it worst? Is there a timing pattern? Give them data to work with."
       },
       { 
-        id: "SysEngineer", 
-        label: "Systems Engineer", 
+        id: "Comms", 
+        label: "Communications Officer", 
         isPrimary: false,
         context: "You're making a list of all possible interference sources. The list is long. Everything electronic is suspect.",
         briefing: "List potential culprits systematically. Power supplies, motors, experiments, communications equipment. Help narrow down possibilities."
       },
       { 
-        id: "SupportCrew", 
-        label: "Crew Member", 
+        id: "Astronaut2", 
+        label: "Astronaut 2", 
         isPrimary: false,
         context: "You're turning equipment off one by one to isolate the problem. This is affecting people's work. They're not happy about it.",
         briefing: "Help with process of elimination. Turn things off, see if interference stops. Apologize to annoyed crew members."
@@ -761,8 +761,8 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "LabTech", 
-        label: "Lab Tech", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're trying to clear the jam without losing the sample batch. The sieve motor is whining. The rock is really wedged in there. You're worried about bending the mesh.",
         briefing: "Extract the rock without damaging the sieve or contaminating the regolith. The manual says not to force it. You might have to force it."
@@ -805,8 +805,8 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Astronaut", 
-        label: "EVA Astronaut", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're monitoring your own glove integrity while continuing to work. You can see the wear pattern getting worse. Every task uses your fingers. This is concerning but not critical yet.",
         briefing: "Your glove is wearing out. You have four hours left on the EVA. Monitor it, work carefully, and decide when it becomes unsafe. Or just finish the EVA. Probably fine."
@@ -826,10 +826,10 @@ export const NORMAL_SCENARIOS = [
         briefing: "Set the threshold for when they must return. Balance mission completion with safety. Err on the side of caution. That's your job."
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut2", 
         label: "Astronaut 2", 
         isPrimary: false,
-        context: "You're suggesting modified handling techniques to reduce finger stress. Use your palm more. Grip differently. It's awkward but might help.",
+        context: "You're suggesting modified handling techniques. You've got an emergency patch kit but the kit has a 6 step procedure to make sure you open it correctly without damaging it.",
         briefing: "Help them work more carefully. Suggest techniques to reduce glove stress. Maybe they can adapt their movements to extend glove life."
       }
     ]
@@ -849,8 +849,8 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "ElectronicsTech", 
-        label: "EVA Astronaut", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're troubleshooting the transmitter on the base tower. The sun is getting low. Your shadow is getting long. You don't want to navigate home in the dark without this beacon.",
         briefing: "Fix the transponder before sunset. The signal is weak and intermittent. Check connections, power, antenna alignment. Forty-seven minutes of daylight left."
@@ -863,8 +863,8 @@ export const NORMAL_SCENARIOS = [
         briefing: "Help diagnose whether this is transmission or reception. Test the signal from your end. Report what you're hearing. Or not hearing."
       },
       { 
-        id: "SupportCrew", 
-        label: "Crew Member", 
+        id: "Astronaut2", 
+        label: "Astronaut 2", 
         isPrimary: false,
         context: "You're reading voltage levels on the power supply. They look fine. They look totally normal. Which makes this more confusing.",
         briefing: "Check if it's an electrical problem. Test power systems. Voltage looks good but maybe there's something subtle. Look for the non-obvious issues."
@@ -917,8 +917,8 @@ export const UNSETTLING_SCENARIOS = [
     
     roles: [
       { 
-        id: "Geophysicist", 
-        label: "Field Astronaut", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're standing next to the seismometer array. You can feel the vibrations through your boots now. The moon isn't supposed to do this.",
         briefing: "The readings are impossible but consistent. Try to determine if this is equipment malfunction or actual lunar activity. The vibrations are getting stronger."

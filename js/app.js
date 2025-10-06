@@ -162,12 +162,8 @@ ${state.scenarioOptions.map((scenario, idx) => `
     <div class="text-sm text-green-600">${escapeHtml(scenario.setup)}</div>
     
     ${scenario.roles && scenario.roles[0] ? `
-      <div class="text-xs border-t border-green-600 pt-2 space-y-1">
-        <div>
-          <span class="text-green-600">You'll play as:</span> 
-          <span class="text-green-400">${escapeHtml(scenario.roles[0].label)}</span>
-        </div>
-        <div class="text-green-500">${escapeHtml(scenario.roles[0].briefing)}</div>
+      <div class="text-xs border-t border-green-600 pt-2 text-green-500">
+        ${escapeHtml(scenario.roles[0].briefing)}
       </div>
     ` : ''}
   </div>

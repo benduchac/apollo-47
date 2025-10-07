@@ -178,7 +178,7 @@ ${state.scenarioOptions.map((scenario, idx) => `
 else if (state.gameState === 'lobby') {
   app.innerHTML = `
     <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="w-full max-w-md space-y-6">
+      <div class="w-full max-w-2xl space-y-6">
         <div class="text-center">
           <h2 class="text-2xl font-bold mb-2">MISSION BRIEFING</h2>
           <div class="text-lg mb-4">Room: ${escapeHtml(state.roomCode)}</div>
@@ -240,14 +240,19 @@ else if (state.gameState === 'playing') {
     app.innerHTML = `
       <div class="flex flex-col h-screen">
         <div class="border-b-2 border-green-400 p-4">
-          <div class="flex justify-between items-center">
-            <div class="flex items-center gap-3">
-              <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
-              <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">
-                COPY
-              </button>
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
+                <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">
+                  COPY
+                </button>
+              </div>
+              <div class="text-sm text-green-600">
+                ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} • 
+                ${escapeHtml(state.selectedScenario?.title || 'Mission')}
+              </div>
             </div>
-            <div class="text-sm">You are: ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
           </div>
         </div>
 
@@ -265,7 +270,11 @@ else if (state.gameState === 'playing') {
   renderMessages();
   setupInput();
 }
+  
+  renderMessages();
+  setupInput();
 }
+
 
 function renderMessages() {
   const messagesDiv = document.getElementById('messages');

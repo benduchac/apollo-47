@@ -157,12 +157,28 @@ export async function joinRoom(code) {
     joined: Date.now()
   });
 
-  const messagesRef = ref(database, `rooms/${code}/messages`);
+const messagesRef = ref(database, `rooms/${code}/messages`);
+
+// Check if this is the first support player (second player total)
+const isFirstSupport = playerCount === 1;
+
+if (isFirstSupport) {
+  // Get the primary astronaut's role label from scenario
+  const primaryLabel = roomData.scenario.roles[0].label;
+  
+  await push(messagesRef, {
+    type: 'system',
+    text: `${getRoleLabel(state.playerRole, state.selectedScenario)} connected to channel. ${primaryLabel}, what's your status?`,
+    timestamp: Date.now()
+  });
+} else {
+  // Standard join message for additional support
   await push(messagesRef, {
     type: 'system',
     text: `${getRoleLabel(state.playerRole, state.selectedScenario)} has joined the mission.`,
     timestamp: Date.now()
   });
+}
 
   listenToRoom(code);
   return true;
@@ -189,6 +205,15 @@ export function listenToRoom(code) {
     });
     window.renderApp && window.renderApp();
   });
+
+  onValue(playersRef, (snapshot) => {
+  state.players = [];
+  snapshot.forEach((child) => {
+    state.players.push(child.val().role);
+  });
+  window.renderApp && window.renderApp();
+  window.updatePlayingHeader && window.updatePlayingHeader(); // Add this line
+});
   
   listenToTyping(code); // NEW: Start listening to typing indicators
 }

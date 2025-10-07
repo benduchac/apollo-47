@@ -236,36 +236,49 @@ else if (state.gameState === 'lobby') {
 // PLAYING SCREEN
 else if (state.gameState === 'playing') {
   // Only set innerHTML if we're entering playing state for the first time
-  if (!document.getElementById('terminal')) {
-    app.innerHTML = `
-      <div class="flex flex-col h-screen">
-        <div class="border-b-2 border-green-400 p-4">
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
-              <div class="flex items-center gap-3 mb-2">
+if (!document.getElementById('terminal')) {
+  app.innerHTML = `
+    <div class="flex flex-col h-screen">
+      <div class="border-b-2 border-green-400 p-4">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-3">
                 <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
                 <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">
                   COPY
                 </button>
               </div>
-              <div class="text-sm text-green-600">
-                ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} • 
-                ${escapeHtml(state.selectedScenario?.title || 'Mission')}
-              </div>
+              
+              ${state.players.length === 1 ? `
+                <div class="text-sm text-yellow-400 animate-pulse flex-1 text-center">
+                  ⚠ SUPPORT REQUESTED...AWAITING RESPONSE...
+                </div>
+              ` : `
+                <div class="flex-1"></div>
+              `}
+              
+              <div class="flex-1"></div>
+            </div>
+            
+            <div class="text-sm text-green-600">
+              ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} • 
+              ${escapeHtml(state.selectedScenario?.title || 'Mission')}
             </div>
           </div>
         </div>
+      </div>
 
-        <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
-          <div id="messages"></div>
-          <div id="typingIndicator"></div>
-          <div id="inputLine" class="terminal-line">
-              <span id="inputText"></span><span class="cursor">█</span>
-          </div>
+      <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
+        <div id="messages"></div>
+        <div id="typingIndicator"></div>
+        <div id="inputLine" class="terminal-line">
+            <span id="inputText"></span><span class="cursor">█</span>
         </div>
       </div>
-    `;
-  }
+    </div>
+  `;
+}
   
   renderMessages();
   setupInput();
@@ -442,6 +455,43 @@ function updateSendStatusDisplay() {
 }
 
 window.updateSendStatusDisplay = updateSendStatusDisplay;
+
+function updatePlayingHeader() {
+  const headerDiv = document.querySelector('.border-b-2.border-green-400');
+  if (!headerDiv) return;
+  
+  headerDiv.innerHTML = `
+    <div class="flex justify-between items-start">
+      <div class="flex-1">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-3">
+            <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
+            <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">
+              COPY
+            </button>
+          </div>
+          
+          ${state.players.length === 1 ? `
+            <div class="text-sm text-yellow-400 animate-pulse flex-1 text-center">
+              ⚠ SUPPORT REQUESTED...AWAITING RESPONSE...
+            </div>
+          ` : `
+            <div class="flex-1"></div>
+          `}
+          
+          <div class="flex-1"></div>
+        </div>
+        
+        <div class="text-sm text-green-600">
+          ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} • 
+          ${escapeHtml(state.selectedScenario?.title || 'Mission')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.updatePlayingHeader = updatePlayingHeader;
 
 
 function handleKeydown(e) {

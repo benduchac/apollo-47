@@ -160,12 +160,6 @@ ${state.scenarioOptions.map((scenario, idx) => `
   >
     <div class="font-bold text-lg">${escapeHtml(scenario.title)}</div>
     <div class="text-sm text-green-600">${escapeHtml(scenario.setup)}</div>
-    
-    ${scenario.roles && scenario.roles[0] ? `
-      <div class="text-xs border-t border-green-600 pt-2 text-green-500">
-        ${escapeHtml(scenario.roles[0].briefing)}
-      </div>
-    ` : ''}
   </div>
 `).join('')}
           </div>
@@ -191,14 +185,22 @@ else if (state.gameState === 'lobby') {
         </div>
         
         <div class="border-2 border-green-400 p-4 space-y-4">
+          ${state.players.length === 1 ? `
+            <div class="text-xs text-green-600 mb-4 border-b border-green-600 pb-3">
+              > Transmission sent to Mission Control...<br>
+              > Standing by for support response...<br>
+              > Signal: Active
+            </div>
+          ` : ''}
+          
           <div>
-            <div class="text-sm text-green-600 mb-2">YOUR ROLE:</div>
-            <div class="text-xl">${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
+            <div class="text-sm text-green-600 mb-2">WHERE YOU ARE:</div>
+            <div class="text-sm">${escapeHtml(getPlayerBriefing(state.playerRole, state.selectedScenario).context || 'Preparing for mission...')}</div>
           </div>
 
           <div>
             <div class="text-sm text-green-600 mb-2">YOUR BRIEFING:</div>
-            <div class="text-sm">${escapeHtml(getPlayerBriefing(state.playerRole, state.selectedScenario))}</div>
+            <div class="text-sm">${escapeHtml(getPlayerBriefing(state.playerRole, state.selectedScenario).briefing || 'Awaiting mission briefing...')}</div>
           </div>
           
           <div>
@@ -206,10 +208,16 @@ else if (state.gameState === 'lobby') {
             <div class="text-sm">${escapeHtml(state.selectedScenario ? state.selectedScenario.setup : 'Loading...')}</div>
           </div>
           
-<div>
-  <div class="text-sm text-green-600 mb-2">CREW MANIFEST:</div>
-  <div class="space-y-1">${state.players.map(player => `<div class="flex items-center gap-2">${escapeHtml(getRoleLabel(player, state.selectedScenario))}</div>`).join('')}</div>
-</div>
+          <div>
+            <div class="text-sm text-green-600 mb-2">CREW MANIFEST:</div>
+            <div class="space-y-1">
+              ${state.players.map(player => `
+                <div class="flex items-center gap-2">
+                  ${escapeHtml(getRoleLabel(player, state.selectedScenario))}
+                </div>
+              `).join('')}
+            </div>
+          </div>
         </div>
         
         <button onclick="beginMission()" class="w-full bg-green-400 text-black py-3 px-4 font-bold hover:bg-green-300 transition">

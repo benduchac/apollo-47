@@ -24,17 +24,23 @@ export const state = {
 export function getPlayerBriefing(role, scenario) {
   if (scenario && scenario.roles) {
     const roleData = scenario.roles.find(r => r.id === role);
-    if (roleData && roleData.briefing) {
-      return roleData.briefing;
+    if (roleData) {
+      return roleData; // Return the whole role object
     }
   }
   
   // Fallback for generic support role
   if (role === 'Support') {
-    return "You're providing additional mission support. Your goal: Assist the primary crew member and help solve problems.";
+    return {
+      context: "You're providing mission support from your station.",
+      briefing: "Assist the primary crew member and help solve problems."
+    };
   }
   
-  return "Awaiting mission briefing...";
+  return {
+    context: "Preparing for mission...",
+    briefing: "Awaiting mission briefing..."
+  };
 }
 
 export function getRoleLabel(role, scenario) {

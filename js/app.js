@@ -1,6 +1,10 @@
 import { getRandomScenarios } from './scenarios-enhanced.js';
 import { state, getRoleLabel, getPlayerBriefing, createRoom, joinRoom, sendMessage, updateTypingStatus } from './game.js';
 import { escapeHtml } from './utils.js';
+import { MOON_VERBS, EQUIPMENT_ADJECTIVES, THINGS, PROTOCOL, getRandomItems, getRandomFromCategory } from './prompts.js';
+
+// Track which category is showing
+let currentPromptCategory = 'generic';
 
 window.renderApp = render;
 window.renderMessages = renderMessages; // Add this line
@@ -236,53 +240,97 @@ else if (state.gameState === 'lobby') {
 // PLAYING SCREEN
 else if (state.gameState === 'playing') {
   // Only set innerHTML if we're entering playing state for the first time
-if (!document.getElementById('terminal')) {
-  app.innerHTML = `
-    <div class="flex flex-col h-screen">
-      <div class="border-b-2 border-green-400 p-4">
-        <div class="flex justify-between items-start">
-          <div class="flex-1">
-            <div class="flex items-center justify-between mb-2">
-              <div class="flex items-center gap-3">
-                <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
-                <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">
-                  COPY
-                </button>
-              </div>
-              
-              ${state.players.length === 1 ? `
-                <div class="text-sm text-yellow-400 animate-pulse flex-1 text-center">
-                  ⚠ SUPPORT REQUESTED...AWAITING RESPONSE...
+  if (!document.getElementById('terminal')) {
+    app.innerHTML = `
+      <div class="flex flex-col h-screen">
+        <div class="border-b-2 border-green-400 p-4">
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <div class="font-bold">APOLLO 47 - ${escapeHtml(state.roomCode)}</div>
+                  <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">
+                    COPY
+                  </button>
                 </div>
-              ` : `
-                <div class="flex-1"></div>
-              `}
+                
+                ${state.players.length === 1 ? `
+                  <div class="text-sm text-yellow-400 animate-pulse flex-1 text-center">
+                    ⚠ SUPPORT REQUESTED...AWAITING RESPONSE...
+                  </div>
+                ` : `
+                  <div class="flex-1"></div>
+                `}
+                
+          <button onclick="togglePrompts()" class="text-sm border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition font-bold">
+            ASTRONAUT ASSISTANCE BUTTON
+          </button>
+        </div>
               
-              <div class="flex-1"></div>
+              <div class="text-sm text-green-600">
+                ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} • 
+                ${escapeHtml(state.selectedScenario?.title || 'Mission')}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
+          <div id="messages"></div>
+          <div id="typingIndicator"></div>
+          <div id="inputLine" class="terminal-line">
+              <span id="inputText"></span><span class="cursor">█</span>
+          </div>
+        </div>
+        
+        <!-- Reference Panel Overlay -->
+        <div id="promptOverlay" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
+          <div class="bg-black border-2 border-green-400 w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <!-- Header -->
+            <div class="border-b-2 border-green-400 p-4">
+              <div class="flex justify-between items-start mb-2">
+                <div class="font-bold text-green-400 text-xl">MISSION REFERENCE</div>
+                <button onclick="togglePrompts()" class="text-green-400 hover:text-green-300 text-2xl leading-none">×</button>
+              </div>
+              <div class="text-xs text-green-600">
+                Not sure what a professional astronaut of your caliber would say? We got these words straight from the manual.
+              </div>
             </div>
             
-            <div class="text-sm text-green-600">
-              ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} • 
-              ${escapeHtml(state.selectedScenario?.title || 'Mission')}
+            <!-- Category Tabs -->
+            <div class="border-b-2 border-green-400 flex">
+              <button onclick="switchPromptCategory('generic')" id="tab-generic" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">
+                GENERIC JARGON
+              </button>
+              <button onclick="switchPromptCategory('things')" id="tab-things" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">
+                THINGS
+              </button>
+              <button onclick="switchPromptCategory('protocol')" id="tab-protocol" class="flex-1 p-3 text-sm hover:bg-green-900 transition">
+                PROTOCOL
+              </button>
+            </div>
+            
+            <!-- Content Area -->
+            <div class="flex-1 overflow-y-auto p-4">
+              <div id="promptContent"></div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="border-t-2 border-green-400 p-4">
+              <button onclick="refreshPrompts()" class="w-full border-2 border-green-400 py-2 hover:bg-green-400 hover:text-black transition">
+                ↻ REFRESH
+              </button>
             </div>
           </div>
         </div>
       </div>
-
-      <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
-        <div id="messages"></div>
-        <div id="typingIndicator"></div>
-        <div id="inputLine" class="terminal-line">
-            <span id="inputText"></span><span class="cursor">█</span>
-        </div>
-      </div>
-    </div>
-  `;
-}
+    `;
+  }
   
   renderMessages();
   setupInput();
 }
+
   
   renderMessages();
   setupInput();
@@ -479,7 +527,9 @@ function updatePlayingHeader() {
             <div class="flex-1"></div>
           `}
           
-          <div class="flex-1"></div>
+          <button onclick="togglePrompts()" class="text-xs border border-green-400 px-3 py-1 hover:bg-green-400 hover:text-black transition">
+            REFERENCE
+          </button>
         </div>
         
         <div class="text-sm text-green-600">
@@ -610,6 +660,85 @@ window.copyRoomCode = async () => {
     setTimeout(() => {
       button.textContent = 'COPY';
     }, 1500);
+  }
+};
+
+window.togglePrompts = () => {
+  const overlay = document.getElementById('promptOverlay');
+  if (overlay.classList.contains('hidden')) {
+    overlay.classList.remove('hidden');
+    refreshPrompts(); // Load initial content
+  } else {
+    overlay.classList.add('hidden');
+  }
+};
+
+window.switchPromptCategory = (category) => {
+  currentPromptCategory = category;
+  
+  // Update active tab styling
+  ['generic', 'things', 'protocol'].forEach(cat => {
+    const tab = document.getElementById(`tab-${cat}`);
+    if (cat === category) {
+      tab.classList.add('bg-green-900');
+    } else {
+      tab.classList.remove('bg-green-900');
+    }
+  });
+  
+  refreshPrompts();
+};
+
+window.refreshPrompts = () => {
+  const content = document.getElementById('promptContent');
+  
+  if (currentPromptCategory === 'generic') {
+    // Show verbs and adjectives with explanation
+    const verbs = getRandomItems(MOON_VERBS, 10);
+    const adjectives = getRandomItems(EQUIPMENT_ADJECTIVES, 10);
+    
+ content.innerHTML = `
+      <div class="text-xs text-green-600 mb-4">
+        Combine these verbs and adjectives to create authentic-sounding technical jargon:
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <div class="text-sm text-green-400 mb-2">VERBS</div>
+          <div class="text-sm space-y-1">
+            ${verbs.map(v => `<div class="text-green-500">${v}</div>`).join('')}
+          </div>
+        </div>
+        <div>
+          <div class="text-sm text-green-400 mb-2">ADJECTIVES</div>
+          <div class="text-sm space-y-1">
+            ${adjectives.map(a => `<div class="text-green-500">${a}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="text-xs text-green-600 mt-4 italic">
+        Example: "Degauss the auxiliary relay" or "Recalibrate the omnidirectional sensor"
+      </div>
+    `;
+  } else if (currentPromptCategory === 'things') {
+    const items = getRandomFromCategory(THINGS, 15);
+    content.innerHTML = `
+      <div class="text-xs text-green-600 mb-4">
+        Physical objects, equipment, and structures you might reference:
+      </div>
+      <div class="text-sm space-y-1">
+        ${items.map(item => `<div class="text-green-500">${item}</div>`).join('')}
+      </div>
+    `;
+  } else if (currentPromptCategory === 'protocol') {
+    const items = getRandomFromCategory(PROTOCOL, 15);
+    content.innerHTML = `
+      <div class="text-xs text-green-600 mb-4">
+        Radio communication phrases and problem descriptions:
+      </div>
+      <div class="text-sm space-y-1">
+        ${items.map(item => `<div class="text-green-500">${item}</div>`).join('')}
+      </div>
+    `;
   }
 };
 

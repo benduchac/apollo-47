@@ -931,7 +931,7 @@ export const UNSETTLING_SCENARIOS = [
         briefing: "Find a scientific explanation for the pattern. Tidal forces? Thermal expansion? Something has to explain this. Right?"
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut2", 
         label: "Astronaut 2", 
         isPrimary: false,
         context: "You're reporting that you can feel it too. Through the rover floor. Through your seat. It's subtle but it's there.",
@@ -961,8 +961,8 @@ export const UNSETTLING_SCENARIOS = [
     
     roles: [
       { 
-        id: "LifeSupport", 
-        label: "Life Support Tech", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're monitoring a system that shouldn't be this unpredictable. All the indicators say it's working perfectly. The numbers say otherwise.",
         briefing: "The output keeps fluctuating. Diagnostics show no problems. Everything tests normal. But the output is definitely changing. Figure out why."
@@ -1005,8 +1005,8 @@ export const UNSETTLING_SCENARIOS = [
     
     roles: [
       { 
-        id: "CommsOfficer", 
-        label: "Communications Officer", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're trying to isolate the signal source. It sounds like voice. Almost like voice. You can't quite make out words. It's getting louder.",
         briefing: "Find out what's transmitting and from where. Isolate the signal. Try to decode it. Figure out if it's equipment or... something else."
@@ -1019,7 +1019,7 @@ export const UNSETTLING_SCENARIOS = [
         briefing: "Rule out known sources. Verify it's not mission traffic. Help identify if this is interference or an actual transmission."
       },
       { 
-        id: "SupportAstronaut", 
+        id: "Astronaut2", 
         label: "Astronaut 2", 
         isPrimary: false,
         context: "You're suggesting it might be equipment echo. Old satellites. Reflected signals. Anything normal.",
@@ -1049,15 +1049,15 @@ export const UNSETTLING_SCENARIOS = [
     
     roles: [
       { 
-        id: "CrewMember", 
-        label: "Crew Member", 
+        id: "AstronautA", 
+        label: "Astronaut A", 
         isPrimary: true,
         context: "You're conducting inventory and trying to reconstruct events. Everyone says they didn't move the tools. Everyone sounds sincere. The tools are just gone.",
         briefing: "Figure out where the tools went. Check everywhere. Interview crew. Try to piece together what happened. Someone must remember something."
       },
       { 
-        id: "AstronautA", 
-        label: "Astronaut A", 
+        id: "AstronautB", 
+        label: "Astronaut B", 
         isPrimary: false,
         context: "You have vague memories of seeing the tools. Or maybe you don't. The more you try to remember, the less certain you are.",
         briefing: "Try to remember. When did you last see them? Were they in the usual place? Search your memory. It's frustrating how unclear it is."
@@ -1093,8 +1093,8 @@ export const UNSETTLING_SCENARIOS = [
     
     roles: [
       { 
-        id: "Photographer", 
-        label: "EVA Astronaut", 
+        id: "Astronaut_2501", 
+        label: "Astronaut 2501", 
         isPrimary: true,
         context: "You're looking at the photos on the camera's preview screen. The spot is there. You look up at the actual crater. Nothing. You look back at the screen. The spot has moved.",
         briefing: "Document what you're seeing. Or what the camera is seeing. Try to figure out if this is lens damage, sensor defect, or something else entirely."
@@ -1107,10 +1107,10 @@ export const UNSETTLING_SCENARIOS = [
         briefing: "Identify technical explanations. Diagnose the camera fault. It's a malfunction. It has to be a malfunction."
       },
       { 
-        id: "Geologist", 
-        label: "Geologist", 
+        id: "CAPCOM", 
+        label: "Communications", 
         iPrimary: false,
-        context: "You want to return to that exact location. Take more photos. Different angles. Different lighting. Gather more data.",
+        context: "You are tired of equipment malfunctions that take hours to work through. Determin",
         briefing: "Push for more investigation. This could be scientifically interesting. Or it could be nothing. Either way, you need more data."
       },
       { 

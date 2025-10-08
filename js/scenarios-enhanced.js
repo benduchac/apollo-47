@@ -145,15 +145,15 @@ export const NORMAL_SCENARIOS = [
     
     roles: [
       { 
-        id: "Astronaut 1", 
-        label: "EVA Astronaut", 
+        id: "Astronaut1", 
+        label: "Astronaut 1", 
         isPrimary: true,
         context: "You're fighting with a stuck mechanism while wearing thick pressure suit gloves. The sun angle is changing. You can see the perfect shot right in front of you.",
         briefing: "The camera is jammed. The lighting is perfect right now. Your gloves are not helping. Talk this through before the sun moves."
       },
       { 
         id: "PhotoLead", 
-        label: "Photography Lead", 
+        label: "Photography Analysis Lead", 
         isPrimary: false,
         context: "You're in Houston with printed shot lists and very specific requirements for this crater. You've been planning this for weeks.",
         briefing: "You need specific angles and features documented. The lighting window is closing. Help them get the camera working or find another solution."

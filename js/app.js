@@ -279,9 +279,11 @@ else if (state.gameState === 'dispatch') {
             <div>
               <div class="font-bold mb-2">CURRENT PERSONNEL ON MISSION:</div>
               <div class="space-y-1">
-                ${state.players.map(player => `
-                  <div>${escapeHtml(getRoleLabel(player, state.selectedScenario))}</div>
-                `).join('')}
+                ${state.players
+                  .filter(player => player !== state.playerRole)
+                  .map(player => `
+                    <div>${escapeHtml(getRoleLabel(player, state.selectedScenario))}</div>
+                  `).join('')}
               </div>
             </div>
             
@@ -384,6 +386,9 @@ else if (state.gameState === 'playing') {
             
             <!-- Category Tabs -->
             <div class="border-b-2 border-green-400 flex">
+              <button onclick="switchPromptCategory('briefing')" id="tab-briefing" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">
+                YOUR BRIEFING
+              </button>
               <button onclick="switchPromptCategory('generic')" id="tab-generic" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">
                 GENERIC JARGON
               </button>
@@ -758,6 +763,7 @@ window.togglePrompts = () => {
   const overlay = document.getElementById('promptOverlay');
   if (overlay.classList.contains('hidden')) {
     overlay.classList.remove('hidden');
+    currentPromptCategory = 'briefing'; // Default to briefing tab
     refreshPrompts(); // Load initial content
   } else {
     overlay.classList.add('hidden');
@@ -768,7 +774,7 @@ window.switchPromptCategory = (category) => {
   currentPromptCategory = category;
   
   // Update active tab styling
-  ['generic', 'things', 'protocol'].forEach(cat => {
+  ['briefing', 'generic', 'things', 'protocol'].forEach(cat => {
     const tab = document.getElementById(`tab-${cat}`);
     if (cat === category) {
       tab.classList.add('bg-green-900');
@@ -783,6 +789,41 @@ window.switchPromptCategory = (category) => {
 window.refreshPrompts = () => {
   const content = document.getElementById('promptContent');
   
+    if (currentPromptCategory === 'briefing') {
+    // Show the player's briefing
+    const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
+    
+    content.innerHTML = `
+      <div class="space-y-4">
+        <div>
+          <div class="text-sm text-green-400 mb-2">YOUR ROLE:</div>
+          <div class="text-lg font-bold mb-3">${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
+        </div>
+        
+        <div>
+          <div class="text-sm text-green-400 mb-2">WHERE YOU ARE:</div>
+          <div class="text-sm">${escapeHtml(roleData.context || 'Preparing for mission...')}</div>
+        </div>
+        
+        <div>
+          <div class="text-sm text-green-400 mb-2">YOUR OBJECTIVE:</div>
+          <div class="text-sm">${escapeHtml(roleData.briefing || 'Awaiting mission briefing...')}</div>
+        </div>
+        
+        <div class="border-t border-green-600 pt-4">
+  <div class="text-sm text-green-400 mb-2">TECHNICAL DETAILS:</div>
+  <div class="text-sm space-y-1">
+    ${state.selectedScenario?.technicalDetails 
+      ? state.selectedScenario.technicalDetails.map(detail => 
+          `<div>• ${escapeHtml(detail)}</div>`
+        ).join('')
+      : '<div>No technical details available</div>'
+    }
+  </div>
+</div>
+    `;
+    }
+
   if (currentPromptCategory === 'generic') {
     // Show verbs and adjectives with explanation
     const verbs = getRandomItems(MOON_VERBS, 10);

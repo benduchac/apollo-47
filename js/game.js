@@ -18,7 +18,9 @@ export const state = {
   scenarioOptions: [],
   lastRenderedMessageCount: 0,  // Add this line
   typingPlayers: [], // NEW: Track who's typing
-  sendStatus: null    // NEW: Track send status ('sending', 'sent', null)
+  sendStatus: null,    // NEW: Track send status ('sending', 'sent', null)
+  currentVoice: null,
+  personalComplication: null
 };
 
 export function getPlayerBriefing(role, scenario) {
@@ -41,6 +43,63 @@ export function getPlayerBriefing(role, scenario) {
     context: "Preparing for mission...",
     briefing: "Awaiting mission briefing..."
   };
+}
+
+// Make sure these are exported in game.js
+export function isPrimaryRole() {
+  if (!state.selectedScenario || !state.selectedScenario.roles) return false;
+  const primaryRole = state.selectedScenario.roles.find(r => r.isPrimary);
+  return primaryRole && state.playerRole === primaryRole.id;
+}
+
+// Stub for complications feature (implement later)
+export function maybeAssignComplication() {
+  // Will implement this later
+  console.log('Complications feature not yet implemented');
+}
+
+export function getAvailableVoices() {
+  if (!state.selectedScenario || !state.selectedScenario.roles) {
+    return [];
+  }
+  
+  // Get all roles from the scenario
+  const voices = state.selectedScenario.roles.map(role => ({
+    id: role.id,
+    label: role.label
+  }));
+  
+  // Add a generic "Support" option if not already present
+  if (!voices.find(v => v.id === 'Support')) {
+    voices.push({
+      id: 'Support',
+      label: 'Support'
+    });
+  }
+  
+  return voices;
+}
+
+export function getDisplayRole() {
+  return state.currentVoice || state.playerRole;
+}
+
+export function switchVoice(newVoice) {
+  const previousVoice = state.currentVoice || state.playerRole;
+  state.currentVoice = newVoice;
+  
+  // Optional: send a system message
+  const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
+  push(messagesRef, {
+    type: 'voice_switch',
+    previousVoice: previousVoice,
+    newVoice: newVoice,
+    timestamp: Date.now()
+  });
+  
+  if (window.renderApp) {
+    window.renderApp();
+  }
 }
 
 export function getRoleLabel(role, scenario) {

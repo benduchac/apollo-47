@@ -1,5 +1,18 @@
 import { getRandomScenarios } from './scenarios-enhanced.js';
-import { state, getRoleLabel, getPlayerBriefing, createRoom, joinRoom, sendMessage, updateTypingStatus } from './game.js';
+import { 
+  state, 
+  getRoleLabel, 
+  getPlayerBriefing, 
+  createRoom, 
+  joinRoom, 
+  sendMessage, 
+  updateTypingStatus,
+  isPrimaryRole,  // ADD THIS
+  getAvailableVoices,  // ADD THIS (for later)
+  getDisplayRole,  // ADD THIS (for later)
+  switchVoice,  // ADD THIS (for later)
+  maybeAssignComplication  // ADD THIS (for complications feature)
+} from './game.js';
 import { escapeHtml } from './utils.js';
 import { MOON_VERBS, EQUIPMENT_ADJECTIVES, THINGS, PROTOCOL, getRandomItems, getRandomFromCategory } from './prompts.js';
 
@@ -236,6 +249,66 @@ else if (state.gameState === 'lobby') {
   `;
 }
 
+// DISPATCH SCREEN (for support players joining)
+else if (state.gameState === 'dispatch') {
+  const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
+  
+  app.innerHTML = `
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="w-full max-w-2xl space-y-6">
+        
+        <div class="border-2 border-green-400 p-8 space-y-6 font-mono">
+          <div class="border-2 border-green-400 p-4 text-center">
+            <div class="font-bold tracking-wider">INCOMING TRANSMISSION - PRIORITY ALPHA</div>
+          </div>
+          
+          <div class="space-y-4">
+            <div>
+              <div class="text-green-600 mb-2">Mission Control has requested your assistance:</div>
+            </div>
+            
+            <div>
+              <div class="font-bold mb-2">SITUATION:</div>
+              <div>${escapeHtml(state.selectedScenario ? state.selectedScenario.setup : '')}</div>
+            </div>
+            
+            <div>
+              <div class="font-bold mb-2">YOUR ROLE:</div>
+              <div>${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
+            </div>
+            
+            <div>
+              <div class="font-bold mb-2">YOUR OBJECTIVE:</div>
+              <div>${escapeHtml(roleData.briefing || 'Provide mission support')}</div>
+            </div>
+            
+            <div class="border-t border-green-600 pt-4 text-sm">
+              <div class="mb-2">Remember: They've been waiting for your support.</div>
+              <div>Use technical language. Confirm transmissions.</div>
+            </div>
+          </div>
+          
+          <div class="text-center text-green-600 pt-4">
+            [PRESS ENTER TO ACCEPT ASSIGNMENT]
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  `;
+  
+  // Set up Enter key handler
+  const handleDispatchEnter = (e) => {
+    if (e.key === 'Enter') {
+      document.removeEventListener('keydown', handleDispatchEnter);
+      state.gameState = 'playing';
+      render();
+      maybeAssignComplication();
+    }
+  };
+  
+  document.addEventListener('keydown', handleDispatchEnter);
+}
 
 // PLAYING SCREEN
 else if (state.gameState === 'playing') {
@@ -629,7 +702,13 @@ window.joinWithCode = async () => {
 };
 
 window.beginMission = () => {
-  state.gameState = 'playing';
+  // If this player is support (not primary), show dispatch screen first
+  if (!isPrimaryRole()) {
+    state.gameState = 'dispatch';
+  } else {
+    state.gameState = 'playing';
+    // maybeAssignComplication(); // Uncomment when implementing complications
+  }
   render();
 };
 

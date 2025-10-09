@@ -253,6 +253,10 @@ else if (state.gameState === 'lobby') {
 else if (state.gameState === 'dispatch') {
   const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
   
+  // Get the primary astronaut's role
+  const primaryRole = state.selectedScenario?.roles?.find(r => r.isPrimary);
+  const primaryLabel = primaryRole ? primaryRole.label : 'Field Astronaut';
+  
   app.innerHTML = `
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="w-full max-w-2xl space-y-6">
@@ -273,7 +277,16 @@ else if (state.gameState === 'dispatch') {
             </div>
             
             <div>
-              <div class="font-bold mb-2">YOUR ROLE:</div>
+              <div class="font-bold mb-2">CURRENT PERSONNEL ON MISSION:</div>
+              <div class="space-y-1">
+                ${state.players.map(player => `
+                  <div>${escapeHtml(getRoleLabel(player, state.selectedScenario))}</div>
+                `).join('')}
+              </div>
+            </div>
+            
+            <div>
+              <div class="font-bold mb-2">YOUR ASSIGNMENT:</div>
               <div>${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
             </div>
             
@@ -283,7 +296,7 @@ else if (state.gameState === 'dispatch') {
             </div>
             
             <div class="border-t border-green-600 pt-4 text-sm">
-              <div class="mb-2">Remember: They've been waiting for your support.</div>
+              <div class="mb-2">Remember: ${primaryLabel} has been waiting for your support.</div>
               <div>Use technical language. Confirm transmissions.</div>
             </div>
           </div>
@@ -303,7 +316,6 @@ else if (state.gameState === 'dispatch') {
       document.removeEventListener('keydown', handleDispatchEnter);
       state.gameState = 'playing';
       render();
-      maybeAssignComplication();
     }
   };
   
@@ -600,8 +612,8 @@ function updatePlayingHeader() {
             <div class="flex-1"></div>
           `}
           
-          <button onclick="togglePrompts()" class="text-xs border border-green-400 px-3 py-1 hover:bg-green-400 hover:text-black transition">
-            REFERENCE
+          <button onclick="togglePrompts()" class="text-sm border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition font-bold">
+            ASTRONAUT ASSISTANCE BUTTON
           </button>
         </div>
         

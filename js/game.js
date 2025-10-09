@@ -197,24 +197,28 @@ export async function joinRoom(code) {
     return false;
   }
 
-  state.roomCode = code;
-  state.selectedScenario = roomData.scenario;
-  state.spotlightPlayer = roomData.spotlightPlayer;
-  
-  // Assign role from scenario if available, otherwise "Support"
-  if (roomData.scenario && roomData.scenario.roles && playerCount < roomData.scenario.roles.length) {
-    state.playerRole = roomData.scenario.roles[playerCount].id;
-  } else {
-    state.playerRole = 'Support';
-  }
-  
-  state.gameState = 'playing';
+state.roomCode = code;
+state.selectedScenario = roomData.scenario;
+state.spotlightPlayer = roomData.spotlightPlayer;
 
-  const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
-  await set(playerRef, {
-    role: state.playerRole,
-    joined: Date.now()
-  });
+// Assign role from scenario if available, otherwise "Support"
+if (roomData.scenario && roomData.scenario.roles && playerCount < roomData.scenario.roles.length) {
+  state.playerRole = roomData.scenario.roles[playerCount].id;
+} else {
+  state.playerRole = 'Support';
+}
+
+// Check if this player is primary (first role in scenario)
+const isPrimary = roomData.scenario?.roles?.[0]?.id === state.playerRole;
+
+// Primary goes straight to playing, support sees dispatch/briefing first
+state.gameState = isPrimary ? 'playing' : 'dispatch';
+
+const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
+await set(playerRef, {
+  role: state.playerRole,
+  joined: Date.now()
+});
 
 const messagesRef = ref(database, `rooms/${code}/messages`);
 

@@ -11,8 +11,10 @@ import {
   getAvailableVoices,  // ADD THIS (for later)
   getDisplayRole,  // ADD THIS (for later)
   switchVoice,  // ADD THIS (for later)
-  maybeAssignComplication  // ADD THIS (for complications feature)
+  maybeAssignComplication,  // ADD THIS (for complications feature)
+  isSupport  // ADD THIS
 } from './game.js';
+
 import { escapeHtml } from './utils.js';
 import { MOON_VERBS, EQUIPMENT_ADJECTIVES, THINGS, PROTOCOL, getRandomItems, getRandomFromCategory } from './prompts.js';
 
@@ -431,12 +433,20 @@ function renderMessages() {
   const messagesDiv = document.getElementById('messages');
   if (!messagesDiv) return;
 
-  const previousCount = state.lastRenderedMessageCount || 0;
-  const currentCount = state.messages.length;
+  // Filter messages based on visibility
+  const visibleMessages = state.messages.filter(msg => {
+    if (!msg.visibility || msg.visibility === 'all') return true;
+    if (msg.visibility === 'primary') return isPrimaryRole();
+    if (msg.visibility === 'support') return isSupport();
+    return true; // default to visible
+  });
 
-  // If this is the first render, show all messages instantly
+  const previousCount = state.lastRenderedMessageCount || 0;
+  const currentCount = visibleMessages.length;
+
+    // If this is the first render, show all messages instantly
   if (previousCount === 0) {
-    messagesDiv.innerHTML = state.messages.map(msg => formatMessage(msg)).join('');
+    messagesDiv.innerHTML = visibleMessages.map(msg => formatMessage(msg)).join('');
     state.lastRenderedMessageCount = currentCount;
     scrollToBottom();
     return;
@@ -444,7 +454,7 @@ function renderMessages() {
 
   // Only animate new messages
   if (currentCount > previousCount) {
-    const newMessages = state.messages.slice(previousCount);
+    const newMessages = visibleMessages.slice(previousCount);
     
     newMessages.forEach((msg) => {
       const messageElement = document.createElement('div');

@@ -131,6 +131,12 @@ export function generateRoomCode() {
   return code;
 }
 
+export function isSupport() {
+  if (!state.selectedScenario || !state.selectedScenario.roles) return false;
+  const primaryRole = state.selectedScenario.roles.find(r => r.isPrimary);
+  return primaryRole && state.playerRole !== primaryRole.id;
+}
+
 export async function createRoom(scenario) {
   const code = generateRoomCode();
   state.roomCode = code;
@@ -160,16 +166,20 @@ export async function createRoom(scenario) {
   });
 
   const messagesRef = ref(database, `rooms/${code}/messages`);
-  await push(messagesRef, {
-    type: 'system',
-    text: `Mission initialized. Room code: ${code}`,
-    timestamp: Date.now()
-  });
-  await push(messagesRef, {
-    type: 'scenario',
-    text: scenario.setup,
-    timestamp: Date.now()
-  });
+
+await push(messagesRef, {
+  type: 'system',
+  text: `Mission initialized. Room code: ${code}`,
+  timestamp: Date.now(),
+  visibility: 'all'  // CHANGED: both should see room code
+});
+
+await push(messagesRef, {
+  type: 'scenario',
+  text: scenario.setup,
+  timestamp: Date.now(),
+  visibility: 'all'  // ADD THIS
+});
 
   listenToRoom(code);
 }
@@ -226,20 +236,30 @@ const messagesRef = ref(database, `rooms/${code}/messages`);
 const isFirstSupport = playerCount === 1;
 
 if (isFirstSupport) {
-  // Get the primary astronaut's role label from scenario
   const primaryLabel = roomData.scenario.roles[0].label;
   
   await push(messagesRef, {
     type: 'system',
     text: `${getRoleLabel(state.playerRole, state.selectedScenario)} connected to channel. ${primaryLabel}, what's your status?`,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    visibility: 'primary'  // Only the astronaut sees this 
   });
-} else {
-  // Standard join message for additional support
+
+    // Message for support player
+  await push(messagesRef, {
+    type: 'system',
+    text: `Support successfully connected to channel. ${getRoleLabel(state.playerRole, state.selectedScenario)}, please transmit your message`,
+    timestamp: Date.now(),
+    visibility: 'support'
+  });
+}
+
+else {
   await push(messagesRef, {
     type: 'system',
     text: `${getRoleLabel(state.playerRole, state.selectedScenario)} has joined the mission.`,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    visibility: 'all'  // ADD THIS
   });
 }
 
@@ -298,13 +318,13 @@ export async function sendMessage() {
   await updateTypingStatus(false);
 
   const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
-  await push(messagesRef, {
-    type: 'message',
-    role: state.playerRole,
-    text: messageToSend,
-    timestamp: Date.now()
-  });
-
+await push(messagesRef, {
+  type: 'message',
+  role: state.playerRole,
+  text: messageToSend,
+  timestamp: Date.now(),
+  visibility: 'all'  // ADD THIS - all chat is visible to everyone
+});
   // Now show the send status animation
   state.sendStatus = 'sending';
   updateSendStatusDisplay();

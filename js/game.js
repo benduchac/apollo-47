@@ -3,7 +3,12 @@ import { ref, set, push, onValue, get } from 'https://www.gstatic.com/firebasejs
 
 let typingTimeout = null;
 
-export const ROLES = ['A1', 'Base', 'A2', 'CDR'];
+// Registered by app.js — replaces window.* coupling
+export const callbacks = {
+  onStateChange: null,
+  onTypingChange: null,
+  onSendStatusChange: null,
+};
 
 export const state = {
   gameState: 'start',
@@ -16,9 +21,8 @@ export const state = {
   inputMessage: '',
   selectedScenario: null,
   scenarioOptions: [],
-  lastRenderedMessageCount: 0,  // Add this line
-  typingPlayers: [], // NEW: Track who's typing
-  sendStatus: null,    // NEW: Track send status ('sending', 'sent', null)
+  typingPlayers: [],
+  sendStatus: null,
   currentVoice: null,
   personalComplication: null
 };
@@ -27,56 +31,43 @@ export function getPlayerBriefing(role, scenario) {
   if (scenario && scenario.roles) {
     const roleData = scenario.roles.find(r => r.id === role);
     if (roleData) {
-      return roleData; // Return the whole role object
+      return roleData;
     }
   }
-  
-  // Fallback for generic support role
+
   if (role === 'Support') {
     return {
       context: "You're providing mission support from your station.",
       briefing: "Assist the primary crew member and help solve problems."
     };
   }
-  
+
   return {
     context: "Preparing for mission...",
     briefing: "Awaiting mission briefing..."
   };
 }
 
-// Make sure these are exported in game.js
 export function isPrimaryRole() {
   if (!state.selectedScenario || !state.selectedScenario.roles) return false;
   const primaryRole = state.selectedScenario.roles.find(r => r.isPrimary);
   return primaryRole && state.playerRole === primaryRole.id;
 }
 
-// Stub for complications feature (implement later)
-export function maybeAssignComplication() {
-  // Will implement this later
-  console.log('Complications feature not yet implemented');
-}
-
 export function getAvailableVoices() {
   if (!state.selectedScenario || !state.selectedScenario.roles) {
     return [];
   }
-  
-  // Get all roles from the scenario
+
   const voices = state.selectedScenario.roles.map(role => ({
     id: role.id,
     label: role.label
   }));
-  
-  // Add a generic "Support" option if not already present
+
   if (!voices.find(v => v.id === 'Support')) {
-    voices.push({
-      id: 'Support',
-      label: 'Support'
-    });
+    voices.push({ id: 'Support', label: 'Support' });
   }
-  
+
   return voices;
 }
 
@@ -87,8 +78,7 @@ export function getDisplayRole() {
 export function switchVoice(newVoice) {
   const previousVoice = state.currentVoice || state.playerRole;
   state.currentVoice = newVoice;
-  
-  // Optional: send a system message
+
   const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
   push(messagesRef, {
     type: 'voice_switch',
@@ -96,22 +86,18 @@ export function switchVoice(newVoice) {
     newVoice: newVoice,
     timestamp: Date.now()
   });
-  
-  if (window.renderApp) {
-    window.renderApp();
-  }
+
+  callbacks.onStateChange?.();
 }
 
 export function getRoleLabel(role, scenario) {
-  // If we have a scenario with custom roles, use those
   if (scenario && scenario.roles) {
     const roleData = scenario.roles.find(r => r.id === role);
     if (roleData) {
       return roleData.label;
     }
   }
-  
-  // Fallback to generic roles
+
   const labels = {
     'A1': 'Astronaut 1 (Primary)',
     'A2': 'Astronaut 2',
@@ -141,8 +127,7 @@ export async function createRoom(scenario) {
   const code = generateRoomCode();
   state.roomCode = code;
   state.selectedScenario = scenario;
-  
-  // Use scenario-specific roles
+
   const primaryRole = scenario.roles[0].id;
   state.playerRole = primaryRole;
   state.spotlightPlayer = primaryRole;
@@ -152,9 +137,9 @@ export async function createRoom(scenario) {
   await set(roomRef, {
     created: Date.now(),
     scenario: {
-    title: scenario.title,
-    setup: scenario.setup,
-    roles: scenario.roles
+      title: scenario.title,
+      setup: scenario.setup,
+      roles: scenario.roles
     },
     spotlightPlayer: primaryRole,
     players: {
@@ -167,19 +152,19 @@ export async function createRoom(scenario) {
 
   const messagesRef = ref(database, `rooms/${code}/messages`);
 
-await push(messagesRef, {
-  type: 'system',
-  text: `Mission initialized. Room code: ${code}`,
-  timestamp: Date.now(),
-  visibility: 'all'  // CHANGED: both should see room code
-});
+  await push(messagesRef, {
+    type: 'system',
+    text: `Mission initialized. Room code: ${code}`,
+    timestamp: Date.now(),
+    visibility: 'all'
+  });
 
-await push(messagesRef, {
-  type: 'scenario',
-  text: scenario.setup,
-  timestamp: Date.now(),
-  visibility: 'all'  // ADD THIS
-});
+  await push(messagesRef, {
+    type: 'scenario',
+    text: scenario.setup,
+    timestamp: Date.now(),
+    visibility: 'all'
+  });
 
   listenToRoom(code);
 }
@@ -192,7 +177,7 @@ export async function joinRoom(code) {
 
   const roomRef = ref(database, `rooms/${code}`);
   const snapshot = await get(roomRef);
-  
+
   if (!snapshot.exists()) {
     alert('Room not found! Check the code and try again.');
     return false;
@@ -207,61 +192,52 @@ export async function joinRoom(code) {
     return false;
   }
 
-state.roomCode = code;
-state.selectedScenario = roomData.scenario;
-state.spotlightPlayer = roomData.spotlightPlayer;
+  state.roomCode = code;
+  state.selectedScenario = roomData.scenario;
+  state.spotlightPlayer = roomData.spotlightPlayer;
 
-// Assign role from scenario if available, otherwise "Support"
-if (roomData.scenario && roomData.scenario.roles && playerCount < roomData.scenario.roles.length) {
-  state.playerRole = roomData.scenario.roles[playerCount].id;
-} else {
-  state.playerRole = 'Support';
-}
+  if (roomData.scenario && roomData.scenario.roles && playerCount < roomData.scenario.roles.length) {
+    state.playerRole = roomData.scenario.roles[playerCount].id;
+  } else {
+    state.playerRole = 'Support';
+  }
 
-// Check if this player is primary (first role in scenario)
-const isPrimary = roomData.scenario?.roles?.[0]?.id === state.playerRole;
+  const isPrimary = roomData.scenario?.roles?.[0]?.id === state.playerRole;
+  state.gameState = isPrimary ? 'playing' : 'dispatch';
 
-// Primary goes straight to playing, support sees dispatch/briefing first
-state.gameState = isPrimary ? 'playing' : 'dispatch';
-
-const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
-await set(playerRef, {
-  role: state.playerRole,
-  joined: Date.now()
-});
-
-const messagesRef = ref(database, `rooms/${code}/messages`);
-
-// Check if this is the first support player (second player total)
-const isFirstSupport = playerCount === 1;
-
-if (isFirstSupport) {
-  const primaryLabel = roomData.scenario.roles[0].label;
-  
-  await push(messagesRef, {
-    type: 'system',
-    text: `${getRoleLabel(state.playerRole, state.selectedScenario)} connected to channel. ${primaryLabel}, what's your status?`,
-    timestamp: Date.now(),
-    visibility: 'primary'  // Only the astronaut sees this 
+  const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
+  await set(playerRef, {
+    role: state.playerRole,
+    joined: Date.now()
   });
 
-    // Message for support player
-  await push(messagesRef, {
-    type: 'system',
-    text: `Support successfully connected to channel. ${getRoleLabel(state.playerRole, state.selectedScenario)}, please transmit your message`,
-    timestamp: Date.now(),
-    visibility: 'support'
-  });
-}
+  const messagesRef = ref(database, `rooms/${code}/messages`);
+  const isFirstSupport = playerCount === 1;
 
-else {
-  await push(messagesRef, {
-    type: 'system',
-    text: `${getRoleLabel(state.playerRole, state.selectedScenario)} has joined the mission.`,
-    timestamp: Date.now(),
-    visibility: 'all'  // ADD THIS
-  });
-}
+  if (isFirstSupport) {
+    const primaryLabel = roomData.scenario.roles[0].label;
+
+    await push(messagesRef, {
+      type: 'system',
+      text: `${getRoleLabel(state.playerRole, state.selectedScenario)} connected to channel. ${primaryLabel}, what's your status?`,
+      timestamp: Date.now(),
+      visibility: 'primary'
+    });
+
+    await push(messagesRef, {
+      type: 'system',
+      text: `Support successfully connected to channel. ${getRoleLabel(state.playerRole, state.selectedScenario)}, please transmit your message`,
+      timestamp: Date.now(),
+      visibility: 'support'
+    });
+  } else {
+    await push(messagesRef, {
+      type: 'system',
+      text: `${getRoleLabel(state.playerRole, state.selectedScenario)} has joined the mission.`,
+      timestamp: Date.now(),
+      visibility: 'all'
+    });
+  }
 
   listenToRoom(code);
   return true;
@@ -277,8 +253,24 @@ export function listenToRoom(code) {
       state.messages.push({ id: child.key, ...child.val() });
     });
     state.messages.sort((a, b) => a.timestamp - b.timestamp);
-    window.renderApp && window.renderApp();
-    scrollToBottom();
+
+    // Remove typing indicator immediately for any role whose message just arrived
+    const fiveSecondsAgo = Date.now() - 5000;
+    state.typingPlayers = state.typingPlayers.filter(role => {
+      const justSent = state.messages.some(
+        m => m.type === 'message' && m.role === role && m.timestamp >= fiveSecondsAgo
+      );
+      if (justSent) {
+        if (typingRemovalTimers[role]) {
+          clearTimeout(typingRemovalTimers[role]);
+          delete typingRemovalTimers[role];
+        }
+        return false;
+      }
+      return true;
+    });
+
+    callbacks.onStateChange?.();
   });
 
   onValue(playersRef, (snapshot) => {
@@ -286,19 +278,10 @@ export function listenToRoom(code) {
     snapshot.forEach((child) => {
       state.players.push(child.val().role);
     });
-    window.renderApp && window.renderApp();
+    callbacks.onStateChange?.();
   });
 
-  onValue(playersRef, (snapshot) => {
-  state.players = [];
-  snapshot.forEach((child) => {
-    state.players.push(child.val().role);
-  });
-  window.renderApp && window.renderApp();
-  window.updatePlayingHeader && window.updatePlayingHeader(); // Add this line
-});
-  
-  listenToTyping(code); // NEW: Start listening to typing indicators
+  listenToTyping(code);
 }
 
 export async function sendMessage() {
@@ -313,54 +296,43 @@ export async function sendMessage() {
 
   const messageToSend = state.inputMessage.trim();
   state.inputMessage = '';
-  
-  // Clear typing status
-  await updateTypingStatus(false);
+
+  state.sendStatus = 'sending';
+  callbacks.onSendStatusChange?.();
 
   const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
-await push(messagesRef, {
-  type: 'message',
-  role: state.playerRole,
-  text: messageToSend,
-  timestamp: Date.now(),
-  visibility: 'all'  // ADD THIS - all chat is visible to everyone
-});
-  // Now show the send status animation
-  state.sendStatus = 'sending';
-  updateSendStatusDisplay();
-  
-  setTimeout(() => {
-    state.sendStatus = 'sent';
-    updateSendStatusDisplay();
-    
-    setTimeout(() => {
-      state.sendStatus = null;
-      updateSendStatusDisplay();
-    }, 300);
-  }, 600);
-}
+  await push(messagesRef, {
+    type: 'message',
+    role: state.playerRole,
+    text: messageToSend,
+    timestamp: Date.now(),
+    visibility: 'all'
+  });
 
-function updateSendStatusDisplay() {
-  if (window.updateSendStatusDisplay) {
-    window.updateSendStatusDisplay();
-  }
+  await updateTypingStatus(false);
+
+  state.sendStatus = 'sent';
+  callbacks.onSendStatusChange?.();
+
+  setTimeout(() => {
+    state.sendStatus = null;
+    callbacks.onSendStatusChange?.();
+  }, 300);
 }
 
 export async function updateTypingStatus(isTyping) {
   if (!state.roomCode) return;
-  
+
   const typingRef = ref(database, `rooms/${state.roomCode}/typing/${state.playerId}`);
-  
+
   if (isTyping) {
     await set(typingRef, {
       role: state.playerRole,
       timestamp: Date.now()
     });
-    
-    // Clear existing timeout
+
     if (typingTimeout) clearTimeout(typingTimeout);
-    
-    // Set timeout to clear typing status after 3 seconds
+
     typingTimeout = setTimeout(async () => {
       await set(typingRef, null);
     }, 3000);
@@ -373,31 +345,47 @@ export async function updateTypingStatus(isTyping) {
   }
 }
 
+const typingRemovalTimers = {};
+
 export function listenToTyping(code) {
   const typingRef = ref(database, `rooms/${code}/typing`);
-  
+
   onValue(typingRef, (snapshot) => {
-    state.typingPlayers = [];
+    const activeTypers = new Set();
     snapshot.forEach((child) => {
       const data = child.val();
-      // Only show typing for OTHER players
       if (child.key !== state.playerId && data) {
-        state.typingPlayers.push(data.role);
+        activeTypers.add(data.role);
       }
     });
-    
-    // Update just the typing indicator
-    if (window.renderTypingIndicator) {
-      window.renderTypingIndicator();
-    }
-  });
-}
 
-function scrollToBottom() {
-  setTimeout(() => {
-    const messagesDiv = document.getElementById('messages');
-    if (messagesDiv) {
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-  }, 100);
+    // Immediately show new typers; cancel any pending removal for them
+    activeTypers.forEach(role => {
+      if (!state.typingPlayers.includes(role)) {
+        state.typingPlayers.push(role);
+      }
+      if (typingRemovalTimers[role]) {
+        clearTimeout(typingRemovalTimers[role]);
+        delete typingRemovalTimers[role];
+      }
+    });
+
+    // Delay removal so the indicator persists until the message arrives —
+    // but skip the delay if the message already beat the typing-cleared event here
+    state.typingPlayers.forEach(role => {
+      if (!activeTypers.has(role) && !typingRemovalTimers[role]) {
+        const fiveSecondsAgo = Date.now() - 5000;
+        const messageAlreadyArrived = state.messages.some(
+          m => m.type === 'message' && m.role === role && m.timestamp >= fiveSecondsAgo
+        );
+        typingRemovalTimers[role] = setTimeout(() => {
+          state.typingPlayers = state.typingPlayers.filter(r => r !== role);
+          delete typingRemovalTimers[role];
+          callbacks.onTypingChange?.();
+        }, messageAlreadyArrived ? 0 : 500);
+      }
+    });
+
+    callbacks.onTypingChange?.();
+  });
 }

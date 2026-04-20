@@ -1,33 +1,32 @@
 import { getRandomScenarios } from './scenarios-enhanced.js';
-import { 
-  state, 
-  getRoleLabel, 
-  getPlayerBriefing, 
-  createRoom, 
-  joinRoom, 
-  sendMessage, 
+import {
+  state,
+  callbacks,
+  getRoleLabel,
+  getPlayerBriefing,
+  createRoom,
+  joinRoom,
+  sendMessage,
   updateTypingStatus,
-  isPrimaryRole,  // ADD THIS
-  getAvailableVoices,  // ADD THIS (for later)
-  getDisplayRole,  // ADD THIS (for later)
-  switchVoice,  // ADD THIS (for later)
-  maybeAssignComplication,  // ADD THIS (for complications feature)
-  isSupport  // ADD THIS
+  isPrimaryRole,
+  isSupport
 } from './game.js';
 
 import { escapeHtml } from './utils.js';
 import { MOON_VERBS, EQUIPMENT_ADJECTIVES, THINGS, PROTOCOL, getRandomItems, getRandomFromCategory } from './prompts.js';
 
-// Track which category is showing
 let currentPromptCategory = 'generic';
+let lastRenderedMessageCount = 0;
 
-window.renderApp = render;
-window.renderMessages = renderMessages; // Add this line
+// Wire up game.js callbacks
+callbacks.onStateChange = render;
+callbacks.onTypingChange = renderTypingIndicator;
+callbacks.onSendStatusChange = updateSendStatusDisplay;
 
 function render() {
   const app = document.getElementById('app');
 
-   // START SCREEN
+  // START SCREEN
   if (state.gameState === 'start') {
     app.innerHTML = `
       <div class="flex items-center justify-center min-h-screen p-4">
@@ -36,14 +35,14 @@ function render() {
             <h1 class="text-3xl font-bold">APOLLO 47</h1>
             <p class="text-sm text-green-600">TECHNICAL HANDBOOK - MISSION CHAT</p>
           </div>
-          
+
           <div class="border-2 border-green-400 p-6 space-y-4">
             <button onclick="showScenarios()" class="w-full bg-green-400 text-black py-3 px-4 font-bold hover:bg-green-300 transition">
               START NEW MISSION
             </button>
-            
+
             <div class="text-center text-green-600">- OR -</div>
-            
+
             <div class="space-y-2">
               <input
                 type="text"
@@ -77,15 +76,15 @@ function render() {
   }
 
   // HOW TO PLAY SCREEN
-else if (state.gameState === 'howToPlay') {
-  app.innerHTML = `
+  else if (state.gameState === 'howToPlay') {
+    app.innerHTML = `
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="w-full max-w-3xl space-y-6">
         <div class="text-center">
           <h2 class="text-2xl font-bold mb-2">HOW TO PLAY APOLLO 47</h2>
           <p class="text-sm text-green-600">A guide for new astronauts</p>
         </div>
-        
+
         <div class="border-2 border-green-400 p-6 space-y-6 max-h-[70vh] overflow-y-auto">
           <div>
             <h3 class="text-lg font-bold mb-2 text-green-300">What Is This Game?</h3>
@@ -150,7 +149,7 @@ else if (state.gameState === 'howToPlay') {
             <p class="text-xs text-green-600 italic">Based on the tabletop RPG by Tim Hutchings</p>
           </div>
         </div>
-        
+
         <div class="text-center">
           <button onclick="backToStart()" class="border-2 border-green-400 text-green-400 py-2 px-6 hover:bg-green-400 hover:text-black transition">
             ← BACK TO START
@@ -159,9 +158,9 @@ else if (state.gameState === 'howToPlay') {
       </div>
     </div>
   `;
-}
+  }
 
- // SCENARIO SELECTION SCREEN
+  // SCENARIO SELECTION SCREEN
   else if (state.gameState === 'selectScenario') {
     app.innerHTML = `
       <div class="flex items-center justify-center min-h-screen p-4">
@@ -170,10 +169,10 @@ else if (state.gameState === 'howToPlay') {
             <h2 class="text-2xl font-bold">SELECT MISSION SCENARIO</h2>
             <p class="text-sm text-green-600">Choose a mission complication to explore</p>
           </div>
-          
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 ${state.scenarioOptions.map((scenario, idx) => `
-  <div 
+  <div
     class="scenario-card border-2 border-green-400 p-4 space-y-3"
     onclick="selectScenario(${idx})"
   >
@@ -182,7 +181,7 @@ ${state.scenarioOptions.map((scenario, idx) => `
   </div>
 `).join('')}
           </div>
-          
+
           <div class="text-center">
             <button onclick="backToStart()" class="border-2 border-green-400 text-green-400 py-2 px-6 hover:bg-green-400 hover:text-black transition">
               ← BACK
@@ -193,16 +192,16 @@ ${state.scenarioOptions.map((scenario, idx) => `
     `;
   }
 
-// LOBBY SCREEN
-else if (state.gameState === 'lobby') {
-  app.innerHTML = `
+  // LOBBY SCREEN
+  else if (state.gameState === 'lobby') {
+    app.innerHTML = `
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="w-full max-w-2xl space-y-6">
         <div class="text-center">
           <h2 class="text-2xl font-bold mb-2">MISSION BRIEFING</h2>
           <div class="text-lg mb-4">Room: ${escapeHtml(state.roomCode)}</div>
         </div>
-        
+
         <div class="border-2 border-green-400 p-4 space-y-4">
           ${state.players.length === 1 ? `
             <div class="text-xs text-green-600 mb-4 border-b border-green-600 pb-3">
@@ -211,7 +210,7 @@ else if (state.gameState === 'lobby') {
               > Signal: Active
             </div>
           ` : ''}
-          
+
           <div>
             <div class="text-sm text-green-600 mb-2">WHERE YOU ARE:</div>
             <div class="text-sm">${escapeHtml(getPlayerBriefing(state.playerRole, state.selectedScenario).context || 'Preparing for mission...')}</div>
@@ -221,12 +220,12 @@ else if (state.gameState === 'lobby') {
             <div class="text-sm text-green-600 mb-2">YOUR BRIEFING:</div>
             <div class="text-sm">${escapeHtml(getPlayerBriefing(state.playerRole, state.selectedScenario).briefing || 'Awaiting mission briefing...')}</div>
           </div>
-          
+
           <div>
             <div class="text-sm text-green-600 mb-2">SITUATION:</div>
             <div class="text-sm">${escapeHtml(state.selectedScenario ? state.selectedScenario.setup : 'Loading...')}</div>
           </div>
-          
+
           <div>
             <div class="text-sm text-green-600 mb-2">CREW MANIFEST:</div>
             <div class="space-y-1">
@@ -238,46 +237,45 @@ else if (state.gameState === 'lobby') {
             </div>
           </div>
         </div>
-        
+
         <button onclick="beginMission()" class="w-full bg-green-400 text-black py-3 px-4 font-bold hover:bg-green-300 transition">
           BEGIN MISSION
         </button>
-        
+
         <div class="text-xs text-center text-green-600">
           Share room code "${state.roomCode}" with other players
         </div>
       </div>
     </div>
   `;
-}
+  }
 
-// DISPATCH SCREEN (for support players joining)
-else if (state.gameState === 'dispatch') {
-  const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
-  
-  // Get the primary astronaut's role
-  const primaryRole = state.selectedScenario?.roles?.find(r => r.isPrimary);
-  const primaryLabel = primaryRole ? primaryRole.label : 'Field Astronaut';
-  
-  app.innerHTML = `
+  // DISPATCH SCREEN (for support players joining)
+  else if (state.gameState === 'dispatch') {
+    const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
+
+    const primaryRole = state.selectedScenario?.roles?.find(r => r.isPrimary);
+    const primaryLabel = primaryRole ? primaryRole.label : 'Field Astronaut';
+
+    app.innerHTML = `
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="w-full max-w-2xl space-y-6">
-        
+
         <div class="border-2 border-green-400 p-8 space-y-6 font-mono">
           <div class="border-2 border-green-400 p-4 text-center">
             <div class="font-bold tracking-wider">INCOMING TRANSMISSION - PRIORITY ALPHA</div>
           </div>
-          
+
           <div class="space-y-4">
             <div>
               <div class="text-green-600 mb-2">Mission Control has requested your assistance:</div>
             </div>
-            
+
             <div>
               <div class="font-bold mb-2">SITUATION:</div>
               <div>${escapeHtml(state.selectedScenario ? state.selectedScenario.setup : '')}</div>
             </div>
-            
+
             <div>
               <div class="font-bold mb-2">CURRENT PERSONNEL ON MISSION:</div>
               <div class="space-y-1">
@@ -288,49 +286,47 @@ else if (state.gameState === 'dispatch') {
                   `).join('')}
               </div>
             </div>
-            
+
             <div>
               <div class="font-bold mb-2">YOUR ASSIGNMENT:</div>
               <div>${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
             </div>
-            
+
             <div>
               <div class="font-bold mb-2">YOUR OBJECTIVE:</div>
               <div>${escapeHtml(roleData.briefing || 'Provide mission support')}</div>
             </div>
-            
+
             <div class="border-t border-green-600 pt-4 text-sm">
               <div class="mb-2">Remember: ${primaryLabel} has been waiting for your support.</div>
               <div>Use technical language. Confirm transmissions.</div>
             </div>
           </div>
-          
+
           <div class="text-center text-green-600 pt-4">
             [PRESS ENTER TO ACCEPT ASSIGNMENT]
           </div>
         </div>
-        
+
       </div>
     </div>
   `;
-  
-  // Set up Enter key handler
-  const handleDispatchEnter = (e) => {
-    if (e.key === 'Enter') {
-      document.removeEventListener('keydown', handleDispatchEnter);
-      state.gameState = 'playing';
-      render();
-    }
-  };
-  
-  document.addEventListener('keydown', handleDispatchEnter);
-}
 
-// PLAYING SCREEN
-else if (state.gameState === 'playing') {
-  // Only set innerHTML if we're entering playing state for the first time
-  if (!document.getElementById('terminal')) {
-    app.innerHTML = `
+    const handleDispatchEnter = (e) => {
+      if (e.key === 'Enter') {
+        document.removeEventListener('keydown', handleDispatchEnter);
+        state.gameState = 'playing';
+        render();
+      }
+    };
+
+    document.addEventListener('keydown', handleDispatchEnter);
+  }
+
+  // PLAYING SCREEN
+  else if (state.gameState === 'playing') {
+    if (!document.getElementById('terminal')) {
+      app.innerHTML = `
       <div class="flex flex-col h-screen">
         <div class="border-b-2 border-green-400 p-4">
           <div class="flex justify-between items-start">
@@ -342,7 +338,7 @@ else if (state.gameState === 'playing') {
                     COPY
                   </button>
                 </div>
-                
+
                 ${state.players.length === 1 ? `
                   <div class="text-sm text-yellow-400 animate-pulse flex-1 text-center">
                     ⚠ SUPPORT REQUESTED...AWAITING RESPONSE...
@@ -350,14 +346,14 @@ else if (state.gameState === 'playing') {
                 ` : `
                   <div class="flex-1"></div>
                 `}
-                
+
           <button onclick="togglePrompts()" class="text-sm border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition font-bold">
             ASTRONAUT ASSISTANCE BUTTON
           </button>
         </div>
-              
+
               <div class="text-sm text-green-600">
-                ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} • 
+                ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} •
                 ${escapeHtml(state.selectedScenario?.title || 'Mission')}
               </div>
             </div>
@@ -367,11 +363,11 @@ else if (state.gameState === 'playing') {
         <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
           <div id="messages"></div>
           <div id="typingIndicator"></div>
-          <div id="inputLine" class="terminal-line">
-              <span id="inputText"></span><span class="cursor">█</span>
+          <div id="inputLine" class="terminal-line text-green-300">
+              <span>[${escapeHtml(state.playerRole)}]: </span><span id="inputText"></span><span class="cursor">█</span>
           </div>
         </div>
-        
+
         <!-- Reference Panel Overlay -->
         <div id="promptOverlay" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
           <div class="bg-black border-2 border-green-400 w-full max-w-2xl max-h-[80vh] flex flex-col">
@@ -385,7 +381,7 @@ else if (state.gameState === 'playing') {
                 Not sure what a professional astronaut of your caliber would say? We got these words straight from the manual.
               </div>
             </div>
-            
+
             <!-- Category Tabs -->
             <div class="border-b-2 border-green-400 flex">
               <button onclick="switchPromptCategory('briefing')" id="tab-briefing" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">
@@ -401,12 +397,12 @@ else if (state.gameState === 'playing') {
                 PROTOCOL
               </button>
             </div>
-            
+
             <!-- Content Area -->
             <div class="flex-1 overflow-y-auto p-4">
               <div id="promptContent"></div>
             </div>
-            
+
             <!-- Footer -->
             <div class="border-t-2 border-green-400 p-4">
               <button onclick="refreshPrompts()" class="w-full border-2 border-green-400 py-2 hover:bg-green-400 hover:text-black transition">
@@ -417,54 +413,61 @@ else if (state.gameState === 'playing') {
         </div>
       </div>
     `;
+    } else {
+      updatePlayingHeader();
+    }
+
+    renderMessages();
+    setupInput();
   }
-  
-  renderMessages();
-  setupInput();
 }
 
-  
-  renderMessages();
-  setupInput();
-}
 
+function appendPendingMessage(text) {
+  const messagesDiv = document.getElementById('messages');
+  if (!messagesDiv) return;
+  const el = document.createElement('div');
+  el.className = 'terminal-line text-green-300';
+  el.dataset.pendingMessage = 'true';
+  el.textContent = `[${state.playerRole}]: ${text}`;
+  messagesDiv.appendChild(el);
+  scrollToBottom();
+}
 
 function renderMessages() {
   const messagesDiv = document.getElementById('messages');
   if (!messagesDiv) return;
 
-  // Filter messages based on visibility
+  // Remove optimistic messages before syncing from Firebase state
+  messagesDiv.querySelectorAll('[data-pending-message]').forEach(el => el.remove());
+
   const visibleMessages = state.messages.filter(msg => {
     if (!msg.visibility || msg.visibility === 'all') return true;
     if (msg.visibility === 'primary') return isPrimaryRole();
     if (msg.visibility === 'support') return isSupport();
-    return true; // default to visible
+    return true;
   });
 
-  const previousCount = state.lastRenderedMessageCount || 0;
+  const previousCount = lastRenderedMessageCount;
   const currentCount = visibleMessages.length;
 
-    // If this is the first render, show all messages instantly
   if (previousCount === 0) {
     messagesDiv.innerHTML = visibleMessages.map(msg => formatMessage(msg)).join('');
-    state.lastRenderedMessageCount = currentCount;
+    lastRenderedMessageCount = currentCount;
     scrollToBottom();
     return;
   }
 
-  // Only animate new messages
   if (currentCount > previousCount) {
     const newMessages = visibleMessages.slice(previousCount);
-    
+
     newMessages.forEach((msg) => {
       const messageElement = document.createElement('div');
       messageElement.className = 'terminal-line';
-      
+
       const formattedText = formatMessage(msg);
       messagesDiv.appendChild(messageElement);
-      
-      // Animate messages from OTHER players (not marked as own-message)
-      // Show our own messages instantly
+
       if (msg.role !== state.playerRole) {
         animateMessage(messageElement, formattedText, 50);
       } else {
@@ -472,14 +475,15 @@ function renderMessages() {
         scrollToBottom();
       }
     });
-    
-    state.lastRenderedMessageCount = currentCount;
+
+    lastRenderedMessageCount = currentCount;
   }
 
   scrollToBottom();
+
+  if (state.sendStatus) updateSendStatusDisplay();
 }
 
-// Helper function to format a message
 function formatMessage(msg) {
   if (msg.type === 'system') {
     return `<div class="terminal-line text-green-600">&gt; ${escapeHtml(msg.text)}</div>`;
@@ -489,7 +493,7 @@ function formatMessage(msg) {
   }
   if (msg.type === 'message') {
     if (msg.role === state.playerRole) {
-      return `<div class="terminal-line" data-own-message="true">${escapeHtml(msg.text)}</div>`;
+      return `<div class="terminal-line text-green-300" data-own-message="true">[${escapeHtml(msg.role)}]: ${escapeHtml(msg.text)}</div>`;
     } else {
       return `<div class="terminal-line">[${escapeHtml(msg.role)}]: ${escapeHtml(msg.text)}</div>`;
     }
@@ -497,28 +501,24 @@ function formatMessage(msg) {
   return '';
 }
 
-// Updated animation function to handle HTML content
 function animateMessage(element, htmlContent, speed = 20) {
-  // For messages with HTML tags (like role labels), we need to extract just the text
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = htmlContent;
   const textToAnimate = tempDiv.textContent || tempDiv.innerText;
-  
-  // Determine if this has a role prefix
+
   const hasRolePrefix = htmlContent.includes('[');
   let rolePrefix = '';
   let messageText = textToAnimate;
-  
+
   if (hasRolePrefix && textToAnimate.includes(']:')) {
     const splitPoint = textToAnimate.indexOf(']:') + 2;
     rolePrefix = textToAnimate.substring(0, splitPoint);
     messageText = textToAnimate.substring(splitPoint);
   }
-  
-  // Show role prefix instantly, animate the message
+
   element.textContent = rolePrefix;
   let index = 0;
-  
+
   const interval = setInterval(() => {
     if (index < messageText.length) {
       element.textContent = rolePrefix + messageText.substring(0, index + 1);
@@ -548,7 +548,7 @@ function setupInput() {
 function renderTypingIndicator() {
   const indicator = document.getElementById('typingIndicator');
   if (!indicator) return;
-  
+
   if (state.typingPlayers.length > 0) {
     const roles = state.typingPlayers.map(role => `[${escapeHtml(role)}]`).join('');
     indicator.innerHTML = `<div class="terminal-line text-green-600 typing-dots">${roles}<span class="dots">...</span></div>`;
@@ -557,57 +557,36 @@ function renderTypingIndicator() {
   }
 }
 
-function renderSendStatus() {
-  const messagesDiv = document.getElementById('messages');
-  if (!messagesDiv) return;
-  
-  const lastMessageElement = messagesDiv.lastElementChild;
-  if (!lastMessageElement) return;
-  
-  const lastMessage = state.messages[state.messages.length - 1];
-  if (!lastMessage || lastMessage.role !== state.playerRole) return;
-  
-  // Update the last message with current send status
-  if (state.sendStatus === 'sending') {
-    lastMessageElement.innerHTML = `${escapeHtml(lastMessage.text)} <span class="text-green-600">[sending...]</span>`;
-  } else if (state.sendStatus === 'sent') {
-    lastMessageElement.innerHTML = `${escapeHtml(lastMessage.text)} <span class="text-green-600">[sent ✓]</span>`;
-  } else {
-    lastMessageElement.innerHTML = `${escapeHtml(lastMessage.text)}`;
-  }
-}
-
 function updateSendStatusDisplay() {
   const messagesDiv = document.getElementById('messages');
   if (!messagesDiv) return;
-  
-  // Find the last message that's marked as ours
-  const messageElements = messagesDiv.querySelectorAll('[data-own-message="true"]');
-  const lastOwnMessage = messageElements[messageElements.length - 1];
-  
-  if (!lastOwnMessage) return;
-  
-  // Get the original text (strip any existing status)
-  const originalText = lastOwnMessage.textContent
-    .replace(' [sending...]', '')
-    .replace(' [sent ✓]', '');
-  
-  // Append appropriate status
-  if (state.sendStatus === 'sending') {
-    lastOwnMessage.textContent = originalText + ' [sending...]';
-  } else if (state.sendStatus === 'sent') {
-    lastOwnMessage.textContent = originalText + ' [sent ✓]';
-  } else {
-    lastOwnMessage.textContent = originalText;
-  }
-}
 
-window.updateSendStatusDisplay = updateSendStatusDisplay;
+  // While in-flight: status goes on the pending element.
+  // Once Firebase echoes back and renderMessages swaps it out: status goes on the confirmed element.
+  const ownMessages = messagesDiv.querySelectorAll('[data-own-message="true"]');
+  const target = messagesDiv.querySelector('[data-pending-message]') ||
+    ownMessages[ownMessages.length - 1];
+
+  if (!target) return;
+
+  const existing = target.querySelector('.send-status');
+  if (existing) existing.remove();
+
+  if (!state.sendStatus) return;
+
+  const tag = document.createElement('span');
+  tag.className = 'send-status text-green-600';
+  tag.textContent = state.sendStatus === 'sending' ? ' [sending...]' : ' [sent ✓]';
+  target.appendChild(tag);
+
+  const inputLine = document.getElementById('inputLine');
+  if (inputLine) inputLine.style.visibility = state.sendStatus === 'sending' ? 'hidden' : 'visible';
+}
 
 function updatePlayingHeader() {
   const headerDiv = document.querySelector('.border-b-2.border-green-400');
   if (!headerDiv) return;
-  
+
   headerDiv.innerHTML = `
     <div class="flex justify-between items-start">
       <div class="flex-1">
@@ -618,7 +597,7 @@ function updatePlayingHeader() {
               COPY
             </button>
           </div>
-          
+
           ${state.players.length === 1 ? `
             <div class="text-sm text-yellow-400 animate-pulse flex-1 text-center">
               ⚠ SUPPORT REQUESTED...AWAITING RESPONSE...
@@ -626,14 +605,14 @@ function updatePlayingHeader() {
           ` : `
             <div class="flex-1"></div>
           `}
-          
+
           <button onclick="togglePrompts()" class="text-sm border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition font-bold">
             ASTRONAUT ASSISTANCE BUTTON
           </button>
         </div>
-        
+
         <div class="text-sm text-green-600">
-          ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} • 
+          ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))} •
           ${escapeHtml(state.selectedScenario?.title || 'Mission')}
         </div>
       </div>
@@ -641,55 +620,46 @@ function updatePlayingHeader() {
   `;
 }
 
-window.updatePlayingHeader = updatePlayingHeader;
-
-
 function handleKeydown(e) {
   if (state.gameState !== 'playing') return;
+  if (state.sendStatus === 'sending') return;
 
   const inputText = document.getElementById('inputText');
   if (!inputText) return;
 
-  // Let browser shortcuts through (Ctrl, Cmd, Alt combinations)
   if (e.ctrlKey || e.metaKey || e.altKey) {
     return;
   }
 
   if (e.key === 'Enter') {
     e.preventDefault();
+    const messageText = state.inputMessage.trim();
+    if (messageText) appendPendingMessage(messageText);
     sendMessage();
-    inputText.textContent = ''; // clear the input after sending
+    inputText.textContent = '';
   } else if (e.key === 'Backspace') {
     e.preventDefault();
     state.inputMessage = state.inputMessage.slice(0, -1);
     inputText.textContent = state.inputMessage;
-    
-    // Update typing status
+
     if (state.inputMessage.length === 0) {
       updateTypingStatus(false);
     } else {
       updateTypingStatus(true);
     }
   } else if (e.key.length === 1) {
-    // Only add printable characters
     e.preventDefault();
     state.inputMessage += e.key;
     inputText.textContent = state.inputMessage;
-    
-    // Update typing status
+
     updateTypingStatus(true);
   }
 }
- 
-// Global functions
+
 window.showScenarios = () => {
-  console.log('1. showScenarios called');
   state.scenarioOptions = getRandomScenarios();
-  console.log('2. scenarioOptions set:', state.scenarioOptions);
   state.gameState = 'selectScenario';
-  console.log('3. gameState set:', state.gameState);
   render();
-  console.log('4. render called');
 };
 
 window.showHowToPlay = () => {
@@ -712,49 +682,36 @@ window.joinWithCode = async () => {
   const input = document.getElementById('joinInput');
   const button = document.getElementById('joinButton');
   const code = input?.value?.trim().toUpperCase();
-  
+
   if (!code || code.length === 0) {
     alert('Please enter a room code');
     return;
   }
-  
-  // Disable button and show loading state
+
   if (button) {
     button.disabled = true;
     button.textContent = 'JOINING...';
   }
-  
+
   await joinRoom(code);
   render();
 };
 
 window.beginMission = () => {
-  // If this player is support (not primary), show dispatch screen first
   if (!isPrimaryRole()) {
     state.gameState = 'dispatch';
   } else {
     state.gameState = 'playing';
-    // maybeAssignComplication(); // Uncomment when implementing complications
   }
   render();
 };
 
-window.sendMsg = () => {
-  sendMessage();
-};
-
-// Make these available globally
-window.renderTypingIndicator = renderTypingIndicator;
-
-window.renderSendStatus = renderSendStatus;
-
 window.copyRoomCode = async () => {
   const button = document.getElementById('copyButton');
   if (!button) return;
-  
+
   try {
     await navigator.clipboard.writeText(state.roomCode);
-    // Show success feedback
     const originalText = button.textContent;
     button.textContent = 'COPIED!';
     setTimeout(() => {
@@ -773,8 +730,8 @@ window.togglePrompts = () => {
   const overlay = document.getElementById('promptOverlay');
   if (overlay.classList.contains('hidden')) {
     overlay.classList.remove('hidden');
-    currentPromptCategory = 'briefing'; // Default to briefing tab
-    refreshPrompts(); // Load initial content
+    currentPromptCategory = 'briefing';
+    refreshPrompts();
   } else {
     overlay.classList.add('hidden');
   }
@@ -782,8 +739,7 @@ window.togglePrompts = () => {
 
 window.switchPromptCategory = (category) => {
   currentPromptCategory = category;
-  
-  // Update active tab styling
+
   ['briefing', 'generic', 'things', 'protocol'].forEach(cat => {
     const tab = document.getElementById(`tab-${cat}`);
     if (cat === category) {
@@ -792,39 +748,40 @@ window.switchPromptCategory = (category) => {
       tab.classList.remove('bg-green-900');
     }
   });
-  
+
   refreshPrompts();
 };
 
-window.refreshPrompts = () => {
+window.refreshPrompts = refreshPrompts;
+
+function refreshPrompts() {
   const content = document.getElementById('promptContent');
-  
-    if (currentPromptCategory === 'briefing') {
-    // Show the player's briefing
+
+  if (currentPromptCategory === 'briefing') {
     const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
-    
+
     content.innerHTML = `
       <div class="space-y-4">
         <div>
           <div class="text-sm text-green-400 mb-2">YOUR ROLE:</div>
           <div class="text-lg font-bold mb-3">${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
         </div>
-        
+
         <div>
           <div class="text-sm text-green-400 mb-2">WHERE YOU ARE:</div>
           <div class="text-sm">${escapeHtml(roleData.context || 'Preparing for mission...')}</div>
         </div>
-        
+
         <div>
           <div class="text-sm text-green-400 mb-2">YOUR OBJECTIVE:</div>
           <div class="text-sm">${escapeHtml(roleData.briefing || 'Awaiting mission briefing...')}</div>
         </div>
-        
+
         <div class="border-t border-green-600 pt-4">
   <div class="text-sm text-green-400 mb-2">TECHNICAL DETAILS:</div>
   <div class="text-sm space-y-1">
-    ${state.selectedScenario?.technicalDetails 
-      ? state.selectedScenario.technicalDetails.map(detail => 
+    ${state.selectedScenario?.technicalDetails
+      ? state.selectedScenario.technicalDetails.map(detail =>
           `<div>• ${escapeHtml(detail)}</div>`
         ).join('')
       : '<div>No technical details available</div>'
@@ -832,14 +789,13 @@ window.refreshPrompts = () => {
   </div>
 </div>
     `;
-    }
+  }
 
   if (currentPromptCategory === 'generic') {
-    // Show verbs and adjectives with explanation
     const verbs = getRandomItems(MOON_VERBS, 10);
     const adjectives = getRandomItems(EQUIPMENT_ADJECTIVES, 10);
-    
- content.innerHTML = `
+
+    content.innerHTML = `
       <div class="text-xs text-green-600 mb-4">
         Combine these verbs and adjectives to create authentic-sounding technical jargon:
       </div>
@@ -882,10 +838,8 @@ window.refreshPrompts = () => {
       </div>
     `;
   }
-};
+}
 
-// Set up global keyboard listener (only once)
 document.addEventListener('keydown', handleKeydown);
 
-// Initial render
 render();

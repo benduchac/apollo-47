@@ -1,9 +1,9 @@
 import { database } from './firebase-config.js';
 import { ref, set, push, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import { getRandomScenario } from './scenarios-enhanced.js';
 
 let typingTimeout = null;
 
-// Registered by app.js — replaces window.* coupling
 export const callbacks = {
   onStateChange: null,
   onTypingChange: null,
@@ -11,7 +11,7 @@ export const callbacks = {
 };
 
 export const state = {
-  gameState: 'start',
+  gameState: 'boot',
   roomCode: '',
   playerRole: '',
   playerId: Math.random().toString(36).substring(7),
@@ -20,12 +20,36 @@ export const state = {
   spotlightPlayer: '',
   inputMessage: '',
   selectedScenario: null,
-  scenarioOptions: [],
   typingPlayers: [],
   sendStatus: null,
   currentVoice: null,
-  personalComplication: null
+  personalComplication: null,
+  // Boot sequence / onboarding
+  callsign: '',
+  terminalInput: '',
+  authStep: 0,
+  joinCode: null,
+  awaitingDisplayed: false,
+  crewAssembled: false,
+  // Phase 7
+  scenarioDropped: false,
+  scenarioDropTimer: null,
 };
+
+const CALLSIGN_WORDS = [
+  'ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT', 'GOLF', 'HOTEL',
+  'INDIA', 'JULIET', 'KILO', 'LIMA', 'MIKE', 'NOVEMBER', 'OSCAR', 'PAPA',
+  'QUEBEC', 'ROMEO', 'SIERRA', 'TANGO', 'UNIFORM', 'VICTOR', 'WHISKEY',
+  'XRAY', 'YANKEE', 'ZULU',
+  'APOLLO', 'LUNA', 'SOLAR', 'RELAY', 'ORBIT', 'BEACON', 'VECTOR', 'ZENITH',
+  'NOVA', 'RESOLUTE', 'MISSION', 'TRANSIT', 'HORIZON', 'POLAR', 'MERIDIAN',
+];
+
+export function generateCallsign() {
+  const word = CALLSIGN_WORDS[Math.floor(Math.random() * CALLSIGN_WORDS.length)];
+  const num = Math.floor(Math.random() * 9) + 1;
+  return `${word}-${num}`;
+}
 
 export function getPlayerBriefing(role, scenario) {
   if (scenario && scenario.roles) {
@@ -38,13 +62,13 @@ export function getPlayerBriefing(role, scenario) {
   if (role === 'Support') {
     return {
       context: "You're providing mission support from your station.",
-      briefing: "Assist the primary crew member and help solve problems."
+      briefing: 'Assist the primary crew member and help solve problems.'
     };
   }
 
   return {
-    context: "Preparing for mission...",
-    briefing: "Awaiting mission briefing..."
+    context: 'Preparing for mission...',
+    briefing: 'Awaiting mission briefing...'
   };
 }
 
@@ -52,23 +76,6 @@ export function isPrimaryRole() {
   if (!state.selectedScenario || !state.selectedScenario.roles) return false;
   const primaryRole = state.selectedScenario.roles.find(r => r.isPrimary);
   return primaryRole && state.playerRole === primaryRole.id;
-}
-
-export function getAvailableVoices() {
-  if (!state.selectedScenario || !state.selectedScenario.roles) {
-    return [];
-  }
-
-  const voices = state.selectedScenario.roles.map(role => ({
-    id: role.id,
-    label: role.label
-  }));
-
-  if (!voices.find(v => v.id === 'Support')) {
-    voices.push({ id: 'Support', label: 'Support' });
-  }
-
-  return voices;
 }
 
 export function getDisplayRole() {
@@ -123,7 +130,8 @@ export function isSupport() {
   return primaryRole && state.playerRole !== primaryRole.id;
 }
 
-export async function createRoom(scenario) {
+export async function createRoom() {
+  const scenario = getRandomScenario();
   const code = generateRoomCode();
   state.roomCode = code;
   state.selectedScenario = scenario;
@@ -131,7 +139,9 @@ export async function createRoom(scenario) {
   const primaryRole = scenario.roles[0].id;
   state.playerRole = primaryRole;
   state.spotlightPlayer = primaryRole;
-  state.gameState = 'lobby';
+  state.gameState = 'awaiting';
+  state.crewAssembled = false;
+  state.awaitingDisplayed = false;
 
   const roomRef = ref(database, `rooms/${code}`);
   await set(roomRef, {
@@ -139,31 +149,18 @@ export async function createRoom(scenario) {
     scenario: {
       title: scenario.title,
       setup: scenario.setup,
-      roles: scenario.roles
+      roles: scenario.roles,
+      technicalDetails: scenario.technicalDetails || []
     },
     spotlightPlayer: primaryRole,
+    scenarioDropped: false,
     players: {
       [state.playerId]: {
         role: primaryRole,
+        callsign: state.callsign,
         joined: Date.now()
       }
     }
-  });
-
-  const messagesRef = ref(database, `rooms/${code}/messages`);
-
-  await push(messagesRef, {
-    type: 'system',
-    text: `Mission initialized. Room code: ${code}`,
-    timestamp: Date.now(),
-    visibility: 'all'
-  });
-
-  await push(messagesRef, {
-    type: 'scenario',
-    text: scenario.setup,
-    timestamp: Date.now(),
-    visibility: 'all'
   });
 
   listenToRoom(code);
@@ -171,30 +168,31 @@ export async function createRoom(scenario) {
 
 export async function joinRoom(code) {
   if (!code || code.trim().length === 0) {
-    alert('Please enter a room code');
-    return false;
+    return { success: false, error: 'No room code provided.' };
   }
 
   const roomRef = ref(database, `rooms/${code}`);
   const snapshot = await get(roomRef);
 
   if (!snapshot.exists()) {
-    alert('Room not found! Check the code and try again.');
-    return false;
+    return { success: false, error: 'AUTHENTICATION FAILED. MISSION CODE NOT FOUND.' };
   }
 
   const roomData = snapshot.val();
   const existingPlayers = roomData.players || {};
   const playerCount = Object.keys(existingPlayers).length;
 
-  if (playerCount >= 6) {
-    alert('Room is full! Maximum 6 players.');
-    return false;
+  if (playerCount >= 4) {
+    return { success: false, error: 'CREW AT CAPACITY. MAXIMUM 4 CREW MEMBERS.' };
   }
 
   state.roomCode = code;
   state.selectedScenario = roomData.scenario;
   state.spotlightPlayer = roomData.spotlightPlayer;
+  state.scenarioDropped = roomData.scenarioDropped || false;
+  state.gameState = 'awaiting';
+  state.crewAssembled = false;
+  state.awaitingDisplayed = false;
 
   if (roomData.scenario && roomData.scenario.roles && playerCount < roomData.scenario.roles.length) {
     state.playerRole = roomData.scenario.roles[playerCount].id;
@@ -202,50 +200,51 @@ export async function joinRoom(code) {
     state.playerRole = 'Support';
   }
 
-  const isPrimary = roomData.scenario?.roles?.[0]?.id === state.playerRole;
-  state.gameState = isPrimary ? 'playing' : 'dispatch';
-
   const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
   await set(playerRef, {
     role: state.playerRole,
+    callsign: state.callsign,
     joined: Date.now()
   });
 
-  const messagesRef = ref(database, `rooms/${code}/messages`);
-  const isFirstSupport = playerCount === 1;
-
-  if (isFirstSupport) {
-    const primaryLabel = roomData.scenario.roles[0].label;
-
+  // Push a status update if joining a room that already has crew
+  if (playerCount >= 2) {
+    const messagesRef = ref(database, `rooms/${code}/messages`);
     await push(messagesRef, {
       type: 'system',
-      text: `${getRoleLabel(state.playerRole, state.selectedScenario)} connected to channel. ${primaryLabel}, what's your status?`,
-      timestamp: Date.now(),
-      visibility: 'primary'
-    });
-
-    await push(messagesRef, {
-      type: 'system',
-      text: `Support successfully connected to channel. ${getRoleLabel(state.playerRole, state.selectedScenario)}, please transmit your message`,
-      timestamp: Date.now(),
-      visibility: 'support'
-    });
-  } else {
-    await push(messagesRef, {
-      type: 'system',
-      text: `${getRoleLabel(state.playerRole, state.selectedScenario)} has joined the mission.`,
+      text: `CREW UPDATED — ${playerCount + 1} CONNECTED.`,
       timestamp: Date.now(),
       visibility: 'all'
     });
   }
 
   listenToRoom(code);
-  return true;
+  return { success: true };
+}
+
+export async function triggerScenarioDrop() {
+  if (!isPrimaryRole()) return;
+  if (state.scenarioDropped) return;
+
+  const droppedRef = ref(database, `rooms/${state.roomCode}/scenarioDropped`);
+  const snapshot = await get(droppedRef);
+  if (snapshot.val() === true) return;
+
+  const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
+  await push(messagesRef, {
+    type: 'transmission',
+    text: state.selectedScenario.setup,
+    timestamp: Date.now(),
+    visibility: 'all'
+  });
+
+  await set(droppedRef, true);
 }
 
 export function listenToRoom(code) {
   const messagesRef = ref(database, `rooms/${code}/messages`);
   const playersRef = ref(database, `rooms/${code}/players`);
+  const scenarioDroppedRef = ref(database, `rooms/${code}/scenarioDropped`);
 
   onValue(messagesRef, (snapshot) => {
     state.messages = [];
@@ -254,7 +253,7 @@ export function listenToRoom(code) {
     });
     state.messages.sort((a, b) => a.timestamp - b.timestamp);
 
-    // Remove typing indicator immediately for any role whose message just arrived
+    // Remove typing indicator for roles whose message just arrived
     const fiveSecondsAgo = Date.now() - 5000;
     state.typingPlayers = state.typingPlayers.filter(role => {
       const justSent = state.messages.some(
@@ -270,6 +269,14 @@ export function listenToRoom(code) {
       return true;
     });
 
+    // Phase 7: start scenario drop timer after 6 player messages
+    if (state.gameState === 'playing' && !state.scenarioDropped && !state.scenarioDropTimer) {
+      const playerMsgCount = state.messages.filter(m => m.type === 'message').length;
+      if (playerMsgCount >= 6) {
+        state.scenarioDropTimer = setTimeout(triggerScenarioDrop, 30000);
+      }
+    }
+
     callbacks.onStateChange?.();
   });
 
@@ -279,6 +286,17 @@ export function listenToRoom(code) {
       state.players.push(child.val().role);
     });
     callbacks.onStateChange?.();
+  });
+
+  onValue(scenarioDroppedRef, (snapshot) => {
+    if (snapshot.val() === true && !state.scenarioDropped) {
+      state.scenarioDropped = true;
+      if (state.scenarioDropTimer) {
+        clearTimeout(state.scenarioDropTimer);
+        state.scenarioDropTimer = null;
+      }
+      callbacks.onStateChange?.();
+    }
   });
 
   listenToTyping(code);
@@ -359,7 +377,6 @@ export function listenToTyping(code) {
       }
     });
 
-    // Immediately show new typers; cancel any pending removal for them
     activeTypers.forEach(role => {
       if (!state.typingPlayers.includes(role)) {
         state.typingPlayers.push(role);
@@ -370,8 +387,6 @@ export function listenToTyping(code) {
       }
     });
 
-    // Delay removal so the indicator persists until the message arrives —
-    // but skip the delay if the message already beat the typing-cleared event here
     state.typingPlayers.forEach(role => {
       if (!activeTypers.has(role) && !typingRemovalTimers[role]) {
         const fiveSecondsAgo = Date.now() - 5000;

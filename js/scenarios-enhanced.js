@@ -895,10 +895,16 @@ export function getRandomScenarios() {
     }
     return shuffled;
   };
-  
+
   const selectedNormal = shuffleArray(NORMAL_SCENARIOS).slice(0, 4);
   const selectedUnsettling = shuffleArray(UNSETTLING_SCENARIOS).slice(0, 2);
   return shuffleArray([...selectedNormal, ...selectedUnsettling]);
+}
+
+// Returns a single randomly selected scenario from the full pool
+export function getRandomScenario() {
+  const allScenarios = [...NORMAL_SCENARIOS, ...UNSETTLING_SCENARIOS];
+  return allScenarios[Math.floor(Math.random() * allScenarios.length)];
 }
 
 // Placeholder for unsettling scenarios - will be added in Part 2

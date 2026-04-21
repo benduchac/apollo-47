@@ -1,3 +1,8 @@
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   font-family: 'Courier New', monospace;
 }
@@ -20,6 +25,10 @@ body {
 
 /* Blinking cursor */
 .cursor {
+  animation: blink 1s step-end infinite;
+}
+
+.blink-text {
   animation: blink 1s step-end infinite;
 }
 

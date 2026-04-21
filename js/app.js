@@ -25,7 +25,7 @@ callbacks.onTypingChange = renderTypingIndicator;
 callbacks.onSendStatusChange = updateSendStatusDisplay;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Terminal helpers (used by boot/auth/comms/awaiting/scene phases)
+// Terminal helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 function appendToTerminal(text, className) {
@@ -33,11 +33,33 @@ function appendToTerminal(text, className) {
   if (!output) return;
   const line = document.createElement('div');
   line.className = className || 'terminal-line';
-  // Empty lines need a non-breaking space so the div has height
-  line.textContent = text || '\u00A0';
+  line.textContent = text || ' ';
   output.appendChild(line);
   const container = document.getElementById('terminal-container');
   if (container) container.scrollTop = container.scrollHeight;
+}
+
+async function typeToTerminal(text, className, speed = 6) {
+  if (!text) { appendToTerminal('', className); return; }
+  const output = document.getElementById('terminal-output');
+  if (!output) return;
+  const line = document.createElement('div');
+  line.className = className || 'terminal-line';
+  line.textContent = '';
+  output.appendChild(line);
+  const container = document.getElementById('terminal-container');
+  for (let i = 0; i < text.length; i++) {
+    line.textContent += text[i];
+    if (container) container.scrollTop = container.scrollHeight;
+    await wait(speed);
+  }
+}
+
+async function typeIntoElement(el, text, speed = 6) {
+  for (let i = 0; i < text.length; i++) {
+    el.textContent += text[i];
+    await wait(speed);
+  }
 }
 
 function showTerminalInput(promptText) {
@@ -55,11 +77,25 @@ function hideTerminalInput() {
 }
 
 function updateTerminalInputDisplay() {
-  const inputText = document.getElementById('terminal-input-text');
-  if (inputText) inputText.textContent = state.terminalInput;
+  const termText = document.getElementById('terminal-input-text');
+  if (termText) termText.textContent = state.terminalInput;
+  const boxText = document.getElementById('box-input-text');
+  if (boxText) boxText.textContent = state.terminalInput;
 }
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+function rebuildTerminalLayout(preserveOutputHTML = '') {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div id="terminal-container" class="h-screen overflow-y-auto p-6 font-mono text-sm leading-relaxed">
+      <div id="terminal-output">${preserveOutputHTML}</div>
+      <div id="terminal-input-line" class="hidden terminal-line mt-1 flex items-center">
+        <span id="terminal-prompt" class="text-green-400"></span><span id="terminal-input-text" class="text-green-300"></span><span class="cursor">█</span>
+      </div>
+    </div>
+  `;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHASE 1: Boot sequence
@@ -70,7 +106,7 @@ async function runBootSequence() {
 
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div id="terminal-container" class="min-h-screen p-6 font-mono text-sm overflow-y-auto leading-relaxed">
+    <div id="terminal-container" class="h-screen overflow-y-auto p-6 font-mono text-sm leading-relaxed">
       <div id="terminal-output"></div>
       <div id="terminal-input-line" class="hidden terminal-line mt-1 flex items-center">
         <span id="terminal-prompt" class="text-green-400"></span><span id="terminal-input-text" class="text-green-300"></span><span class="cursor">█</span>
@@ -78,24 +114,19 @@ async function runBootSequence() {
     </div>
   `;
 
-  appendToTerminal('CAPCOM SYSTEMS INC. — LUNAR COMMUNICATIONS TERMINAL v4.2.1');
-  appendToTerminal('COPYRIGHT (C) 1984-1986 CAPCOM SYSTEMS INC.');
-  await wait(300);
+  await typeToTerminal('CAPCOM SYSTEMS INC. — LUNAR COMMUNICATIONS TERMINAL v4.2.1');
+  await typeToTerminal('COPYRIGHT (C) 1984-1986 CAPCOM SYSTEMS INC.');
   appendToTerminal('');
-  appendToTerminal('BIOS CHECK.....................OK');
-  await wait(180);
-  appendToTerminal('RAM: 640K      [========================================] OK');
-  await wait(220);
-  appendToTerminal('VIDEO MEMORY: 256K.............OK');
-  await wait(180);
-  appendToTerminal('CHECKING COMMS ARRAY.......................................OK');
-  await wait(350);
-  appendToTerminal('LOADING MISSION PROTOCOL STACK.............................OK');
-  await wait(450);
-  appendToTerminal('INITIALIZING LUNAR RELAY UPLINK....');
-  await wait(1100);
+  await typeToTerminal('BIOS CHECK.....................OK');
+  await typeToTerminal('RAM: 640K      [========================================] OK');
+  await typeToTerminal('VIDEO MEMORY: 256K.............OK');
+  await typeToTerminal('CHECKING COMMS ARRAY.......................................OK');
+  await wait(150);
+  await typeToTerminal('LOADING MISSION PROTOCOL STACK.............................OK');
+  await wait(200);
+  await typeToTerminal('INITIALIZING LUNAR RELAY UPLINK....');
+  await wait(700);
 
-  // ASCII moon art
   const output = document.getElementById('terminal-output');
   const moonPre = document.createElement('pre');
   moonPre.className = 'text-green-400 my-3 text-xs leading-tight';
@@ -114,79 +145,212 @@ async function runBootSequence() {
   output.appendChild(moonPre);
   const container = document.getElementById('terminal-container');
   if (container) container.scrollTop = container.scrollHeight;
-  await wait(500);
+  await wait(300);
 
   appendToTerminal('');
-  appendToTerminal('APOLLO LUNAR COMMUNICATIONS NETWORK');
-  await wait(200);
-  appendToTerminal('UPLINK ESTABLISHED: CAPCOM-VII RELAY');
-  await wait(200);
+  await typeToTerminal('APOLLO LUNAR COMMUNICATIONS NETWORK');
+  await typeToTerminal('UPLINK ESTABLISHED: CAPCOM-VII RELAY');
 
   const now = new Date();
   const timeStr = now.toTimeString().slice(0, 8);
   const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
-  appendToTerminal(`LOCAL TIME: ${timeStr}    MISSION DATE: SOL-${dayOfYear}`);
+  await typeToTerminal(`LOCAL TIME: ${timeStr}    MISSION DATE: SOL-${dayOfYear}`);
 
-  await wait(900);
+  await wait(500);
   appendToTerminal('');
-  appendToTerminal('> SYSTEM READY.');
-  await wait(700);
+  await typeToTerminal('> SYSTEM READY.');
+  await wait(400);
 
   state.gameState = 'auth';
-  renderAuth();
+  await renderAuth();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHASE 2: Authentication
 // ─────────────────────────────────────────────────────────────────────────────
 
-function renderAuth() {
+async function renderAuth() {
   appendToTerminal('');
-  appendToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
-  appendToTerminal('CAPCOM SECURITY PROTOCOL — LUNAR CLEARANCE VERIFICATION', 'terminal-line');
-  appendToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
+  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
+  await typeToTerminal('CAPCOM SECURITY PROTOCOL — LUNAR CLEARANCE VERIFICATION');
+  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
   appendToTerminal('');
-  appendToTerminal('This terminal requires MOON_ALPHA_II clearance.');
+  await typeToTerminal('This terminal requires MOON_ALPHA_II clearance.');
   appendToTerminal('');
-  appendToTerminal('Confirm clearance level by entering: ALPHA');
+  await typeToTerminal('Confirm clearance level by entering: ALPHA', 'terminal-line font-bold');
   appendToTerminal('');
   state.authStep = 0;
   state.terminalInput = '';
+  state.authBusy = false;
   showTerminalInput('> ');
 }
 
-function handleAuthInput() {
+async function handleAuthInput() {
+  if (state.authBusy) return;
+  state.authBusy = true;
+
   const input = state.terminalInput.trim();
   state.terminalInput = '';
-  hideTerminalInput();
 
   if (state.authStep === 0) {
-    appendToTerminal(`> ${input || 'ALPHA'}`);
+    hideTerminalInput();
+    updateTerminalInputDisplay();
+    await typeToTerminal(`> ${input || 'ALPHA'}`);
     appendToTerminal('');
-    appendToTerminal('CLEARANCE CONFIRMED.');
-    appendToTerminal('');
-    appendToTerminal('COMMUNICATION PROTOCOL REMINDER:');
-    appendToTerminal('All transmissions are logged and subject to review.');
-    appendToTerminal('Comms are to remain appropriate to the situation at all times.');
-    appendToTerminal('');
-    appendToTerminal('Confirm acknowledgement by entering: ACK');
-    appendToTerminal('');
-    state.authStep = 1;
-    showTerminalInput('> ');
+
+    const output = document.getElementById('terminal-output');
+    const confirmedDiv = document.createElement('div');
+    confirmedDiv.className = 'terminal-line text-green-300 font-bold blink-text';
+    output.appendChild(confirmedDiv);
+    const termContainer = document.getElementById('terminal-container');
+    if (termContainer) termContainer.scrollTop = termContainer.scrollHeight;
+    await typeIntoElement(confirmedDiv, 'CLEARANCE CONFIRMED.');
+    await wait(2000);
+
+    showProtocolBox();
+
   } else if (state.authStep === 1) {
-    appendToTerminal(`> ${input || 'ACK'}`);
-    appendToTerminal('');
-    appendToTerminal('LOGGED. PROCEEDING.');
+    updateTerminalInputDisplay();
 
-    // Assign callsign
+    const title = document.getElementById('box-title');
+    if (title) title.textContent = 'HOW THIS WORKS';
+
+    const footer = document.getElementById('box-footer');
+    if (footer) {
+      footer.innerHTML = `<div class="text-green-600 text-xs text-center w-full tracking-widest animate-pulse">PRESS ENTER TO CONTINUE</div>`;
+    }
+
+    const boxContent = document.getElementById('box-content');
+    if (boxContent) boxContent.innerHTML = '';
+
+    const rulesLines = [
+      { text: "You're about to improvise a radio conversation", cls: 'text-green-400' },
+      { text: "about a routine lunar mission going slightly wrong.", cls: 'text-green-400' },
+      { text: '', cls: '' },
+      { text: "Stay in character. Invent technical jargon.", cls: 'text-green-400' },
+      { text: "You can make it up — it just needs to sound real.", cls: 'text-green-400' },
+      { text: '', cls: '' },
+      { text: "One player is on the moon (Primary).", cls: 'text-green-400' },
+      { text: "Everyone else is on the radio (Support).", cls: 'text-green-400' },
+      { text: '', cls: '' },
+      { text: "Small problems are the whole game.", cls: 'text-green-300 font-bold' },
+      { text: "There are no right answers. Keep talking.", cls: 'text-green-400' },
+    ];
+
+    for (const line of rulesLines) {
+      const div = document.createElement('div');
+      if (!line.text) { div.innerHTML = '&nbsp;'; boxContent.appendChild(div); continue; }
+      div.className = line.cls;
+      boxContent.appendChild(div);
+      await typeIntoElement(div, line.text, 6);
+      await wait(15);
+    }
+
+    state.authStep = 2;
+    state.authBusy = false;
+
+  } else if (state.authStep === 2) {
     state.callsign = generateCallsign();
-    appendToTerminal('');
-    appendToTerminal(`CALLSIGN ASSIGNED: ${state.callsign}`);
-    appendToTerminal('');
-
     state.gameState = 'comms';
-    setTimeout(() => renderComms(), 900);
+    showCapcomConnection();
   }
+}
+
+async function showProtocolBox() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="h-screen flex items-center justify-center font-mono text-sm bg-black">
+      <div class="border-2 border-green-600 max-w-md w-full mx-8">
+        <div id="box-title" class="border-b-2 border-green-600 p-4 text-center font-bold text-green-300 tracking-widest">
+          COMMUNICATION PROTOCOL
+        </div>
+        <div id="box-content" class="p-6 text-green-400 text-sm leading-relaxed"></div>
+        <div id="box-footer" class="border-t border-green-800 p-4 flex items-center gap-1">
+          <span class="text-green-400">&gt;&nbsp;</span><span id="box-input-text" class="text-green-300"></span><span class="cursor">█</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const boxContent = document.getElementById('box-content');
+  const protocolLines = [
+    { text: 'All transmissions are logged and subject', cls: 'text-green-400' },
+    { text: 'to review by CAPCOM staff.', cls: 'text-green-400' },
+    { text: '', cls: '' },
+    { text: 'Communications are to remain appropriate', cls: 'text-green-400' },
+    { text: 'to the situation at all times.', cls: 'text-green-400' },
+    { text: '', cls: '' },
+    { text: 'Unauthorised use may result in mission', cls: 'text-green-400' },
+    { text: 'suspension.', cls: 'text-green-400' },
+    { text: '', cls: '' },
+    { text: 'Enter ACK to acknowledge.', cls: 'text-green-600 text-xs' },
+  ];
+
+  for (const line of protocolLines) {
+    const div = document.createElement('div');
+    if (!line.text) { div.innerHTML = '&nbsp;'; boxContent.appendChild(div); continue; }
+    div.className = line.cls;
+    boxContent.appendChild(div);
+    await typeIntoElement(div, line.text, 6);
+    await wait(20);
+  }
+
+  state.authStep = 1;
+  state.terminalInput = '';
+  state.authBusy = false;
+}
+
+async function showCapcomConnection() {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="h-screen flex items-center justify-center font-mono text-sm bg-black">
+      <div class="border-2 border-green-600 max-w-md w-full mx-8">
+        <div class="border-b-2 border-green-600 p-4 text-center font-bold text-green-300 tracking-widest">
+          ══  CAPCOM LINK PROTOCOL v2.1  ══
+        </div>
+        <div id="protocol-lines" class="p-6 text-green-400 text-sm leading-relaxed"></div>
+        <div class="border-t border-green-800 p-3 text-xs text-green-700 text-center">
+          ALL TRANSMISSIONS LOGGED — CLEARANCE LEVEL: MOON_ALPHA_II
+        </div>
+      </div>
+    </div>
+  `;
+
+  const protoContent = document.getElementById('protocol-lines');
+  const protoLines = [
+    { text: 'ESTABLISHING SECURE CHANNEL...', cls: 'text-green-400',          pause: 400 },
+    { text: '',                               cls: '',                         pause: 100 },
+    { text: 'ENCRYPTION ...... AES-128-LUNAR', cls: 'text-green-600 text-xs', pause: 200 },
+    { text: 'PROTOCOL ........ LUNAR-TCP/2',   cls: 'text-green-600 text-xs', pause: 200 },
+    { text: 'RELAY NODE ....... CAPCOM-VII',   cls: 'text-green-600 text-xs', pause: 200 },
+    { text: 'HANDSHAKE ....... 3-WAY VERIFY',  cls: 'text-green-600 text-xs', pause: 200 },
+    { text: 'COMPRESSION ..... DELTA-4',       cls: 'text-green-600 text-xs', pause: 400 },
+    { text: '',                               cls: '',                         pause: 100 },
+    { text: 'STATUS: AUTHENTICATING...',       cls: 'text-green-300 animate-pulse', pause: 0 },
+  ];
+
+  let statusDiv = null;
+  for (const line of protoLines) {
+    const div = document.createElement('div');
+    if (!line.text) { div.innerHTML = '&nbsp;'; protoContent.appendChild(div); await wait(line.pause); continue; }
+    div.className = line.cls;
+    protoContent.appendChild(div);
+    await typeIntoElement(div, line.text, 20);
+    if (line.text.startsWith('STATUS:')) statusDiv = div;
+    await wait(line.pause);
+  }
+
+  if (statusDiv) {
+    await wait(600);
+    statusDiv.classList.remove('animate-pulse');
+    statusDiv.textContent = '';
+    await typeIntoElement(statusDiv, 'STATUS: LINK ESTABLISHED', 20);
+  }
+
+  await wait(3000);
+
+  rebuildTerminalLayout();
+  renderComms();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,40 +359,38 @@ function handleAuthInput() {
 
 async function renderComms() {
   if (state.gameState !== 'comms') return;
-  appendToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
+  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
   appendToTerminal('');
 
   if (state.joinCode) {
-    // JOIN PATH — auto-connect
-    appendToTerminal('CAPCOM UPLINK READY.');
+    await typeToTerminal('CAPCOM UPLINK READY.');
     appendToTerminal('');
-    appendToTerminal('Incoming comms link detected.');
-    appendToTerminal(`Authenticating mission code: ${state.joinCode}...`);
+    await typeToTerminal('Incoming comms link detected.');
+    await typeToTerminal(`Authenticating mission code: ${state.joinCode}...`);
     await wait(1200);
 
     const result = await joinRoom(state.joinCode);
 
     if (!result.success) {
       appendToTerminal('');
-      appendToTerminal(result.error, 'terminal-line text-yellow-400');
+      await typeToTerminal(result.error, 'terminal-line text-yellow-400');
       appendToTerminal('');
-      appendToTerminal('SYSTEM HALTED. CLOSE THIS TERMINAL TO EXIT.');
+      await typeToTerminal('SYSTEM HALTED. CLOSE THIS TERMINAL TO EXIT.');
       return;
     }
 
     appendToTerminal('');
-    appendToTerminal('AUTHENTICATION CONFIRMED.');
-    appendToTerminal('Patching into active mission link...');
-    await wait(800);
+    await typeToTerminal('AUTHENTICATION CONFIRMED.');
+    await typeToTerminal('Patching into active mission link...');
+    await wait(600);
 
     renderAwaiting();
   } else {
-    // HOST PATH — prompt for Y/N
-    appendToTerminal('CAPCOM UPLINK READY.');
+    await typeToTerminal('CAPCOM UPLINK READY.');
     appendToTerminal('');
-    appendToTerminal('No active mission link detected.');
+    await typeToTerminal('No active mission link detected.');
     appendToTerminal('');
-    appendToTerminal('Establish new comms link? [Y/N]');
+    await typeToTerminal('Establish new comms link? [Y/N]');
     appendToTerminal('');
     showTerminalInput('> ');
   }
@@ -236,30 +398,155 @@ async function renderComms() {
 
 async function acceptCommsPrompt() {
   hideTerminalInput();
-  appendToTerminal('> Y');
+  await typeToTerminal('> Y');
   appendToTerminal('');
-  appendToTerminal('GENERATING SECURE COMMS CODE...');
+  await typeToTerminal('GENERATING SECURE COMMS CODE...');
   await wait(600);
 
   await createRoom();
 
-  appendToTerminal('LINK ESTABLISHED.');
+  const currentOutputHTML = document.getElementById('terminal-output').innerHTML;
+  const app = document.getElementById('app');
+
+  // Build split layout — panel starts off-screen, buttons start invisible
+  app.innerHTML = `
+    <div class="flex h-screen overflow-hidden">
+      <div id="terminal-container" class="flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed">
+        <div id="terminal-output">${currentOutputHTML}</div>
+        <div id="terminal-input-line" class="hidden terminal-line mt-1 flex items-center">
+          <span id="terminal-prompt" class="text-green-400"></span><span id="terminal-input-text" class="text-green-300"></span><span class="cursor">█</span>
+        </div>
+      </div>
+
+      <div id="comms-panel" class="w-72 border-l-2 border-green-800 flex flex-col font-mono text-sm bg-black flex-shrink-0"
+           style="transform: translateX(100%);">
+        <div class="border-b border-green-800 p-3 text-green-600 text-xs tracking-widest font-bold">
+          ── MISSION COMMS LINK ──
+        </div>
+        <div class="p-4 flex flex-col gap-2 flex-1 overflow-y-auto">
+          <div class="text-green-700 text-xs leading-relaxed mb-2">
+            Transmit this access code to<br>
+            all incoming crew. Authenticate<br>
+            before sharing. Do not broadcast<br>
+            on open channels.
+          </div>
+
+          <button id="btn-com1" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;COM-1&nbsp;]&nbsp;&nbsp;UPLINK CHANNEL
+          </button>
+          <button id="btn-com2" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;COM-2&nbsp;]&nbsp;&nbsp;SIGNAL VERIFY
+          </button>
+          <button id="btn-sec1" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;SEC-1&nbsp;]&nbsp;&nbsp;ENCRYPT LOCK
+          </button>
+
+          <div id="btn-code" style="opacity:0; cursor:pointer;"
+               onclick="copyLink('btn-code')"
+               class="border-2 border-green-600 p-4 my-1 text-center hover:border-green-400 transition-colors">
+            <div class="text-xs text-green-600 mb-2 tracking-widest">── COMMS CODE ──</div>
+            <div id="comms-code-display" class="text-xl font-bold text-green-300 tracking-widest">${escapeHtml(state.roomCode)}</div>
+            <div class="text-xs text-green-800 mt-1">CLICK TO COPY</div>
+          </div>
+
+          <button id="btn-copy" style="opacity:0;"
+                  onclick="copyLink('btn-copy')"
+                  class="text-green-400 border border-green-700 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-green-950 transition">
+            [&nbsp;COPY&nbsp;&nbsp;]&nbsp;&nbsp;SHARE UPLINK
+          </button>
+          <button id="btn-pwd1" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;PWD-1&nbsp;]&nbsp;&nbsp;AUTH TOKEN
+          </button>
+          <button id="btn-pwd2" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;PWD-2&nbsp;]&nbsp;&nbsp;CLEARANCE VRF
+          </button>
+        </div>
+        <div class="border-t border-green-800 p-3 text-xs text-green-800 text-center">
+          CAPCOM-VII RELAY ACTIVE
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Slide panel in
+  await wait(80);
+  const panel = document.getElementById('comms-panel');
+  if (panel) {
+    panel.style.transition = 'transform 0.45s ease-out';
+    panel.style.transform = 'translateX(0)';
+  }
+  await wait(500);
+
+  // Reveal panel items top to bottom
+  const panelItemIds = ['btn-com1', 'btn-com2', 'btn-sec1', 'btn-code', 'btn-copy', 'btn-pwd1', 'btn-pwd2'];
+  for (const id of panelItemIds) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.transition = 'opacity 0.3s ease';
+      el.style.opacity = '1';
+    }
+    await wait(1000);
+  }
+
+  await wait(200);
+
+  // Type terminal messages + inline copy button
+  await typeToTerminal('LINK ESTABLISHED.');
   appendToTerminal('');
 
-  // Show room code with copy button
   const output = document.getElementById('terminal-output');
   const codeEl = document.createElement('div');
-  codeEl.className = 'terminal-line my-1';
-  codeEl.innerHTML = `MISSION COMMS CODE: <span class="font-bold text-green-300">${escapeHtml(state.roomCode)}</span>  <button onclick="copyRoomCodeTerminal()" id="copyButtonTerminal" class="text-xs border border-green-600 px-2 py-0.5 hover:bg-green-900 transition ml-2 font-mono">[COPY LINK]</button>`;
+  codeEl.className = 'terminal-line';
+  codeEl.innerHTML = `MISSION COMMS CODE: <span class="font-bold text-green-300">${escapeHtml(state.roomCode)}</span>&nbsp;&nbsp;<button onclick="copyLink('copy-inline')" id="copy-inline" class="font-mono text-xs border border-green-600 px-2 py-0.5 hover:bg-green-900 transition">[COPY LINK]</button>`;
   output.appendChild(codeEl);
-  const container = document.getElementById('terminal-container');
-  if (container) container.scrollTop = container.scrollHeight;
+  const termContainer = document.getElementById('terminal-container');
+  if (termContainer) termContainer.scrollTop = termContainer.scrollHeight;
 
   appendToTerminal('');
-  appendToTerminal('Share this link with your crew to establish comms.');
+  await typeToTerminal('Share this code with your crew to establish comms.');
   appendToTerminal('');
 
   renderAwaiting();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Panel button light-up (called when a second player connects)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function lightUpPanelButtons() {
+  const items = [
+    { id: 'btn-com1', type: 'yellow' },
+    { id: 'btn-com2', type: 'yellow' },
+    { id: 'btn-sec1', type: 'yellow' },
+    { id: 'btn-code', type: 'code'   },
+    { id: 'btn-copy', type: 'green'  },
+    { id: 'btn-pwd1', type: 'yellow' },
+    { id: 'btn-pwd2', type: 'yellow' },
+  ];
+
+  for (const item of items) {
+    const el = document.getElementById(item.id);
+    if (!el) continue;
+    el.style.transition = 'all 0.25s ease';
+    if (item.type === 'yellow') {
+      el.style.backgroundColor = '#854d0e'; // yellow-800
+      el.style.borderColor     = '#854d0e';
+      el.style.color           = '#000';
+    } else if (item.type === 'green') {
+      el.style.backgroundColor = '#15803d'; // green-700
+      el.style.borderColor     = '#15803d';
+      el.style.color           = '#000';
+    } else if (item.type === 'code') {
+      el.style.borderColor = '#4ade80'; // green-400
+    }
+    await wait(1000);
+  }
+  await wait(500);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -269,140 +556,123 @@ async function acceptCommsPrompt() {
 function renderAwaiting() {
   state.awaitingDisplayed = true;
 
-  // If crew is already at 2+ when we arrive (late joiner), skip straight to transition
   if (state.players.length >= 2 && !state.crewAssembled) {
     state.crewAssembled = true;
-    appendToTerminal('');
-    appendToTerminal(`CREW SIGNAL CONFIRMED.`);
-    appendToTerminal(`LINK ESTABLISHED — ${state.players.length} CREW CONNECTED.`);
-    appendToTerminal('');
-    appendToTerminal('INITIATING MISSION BRIEF...');
-    setTimeout(() => {
-      state.gameState = 'scene';
-      renderScene();
-    }, 2000);
+    handleCrewAssembled();
     return;
   }
 
-  // Show waiting state
   appendToTerminal('');
-  if (!state.joinCode) {
-    // Host
-    const output = document.getElementById('terminal-output');
-    const awaitEl = document.createElement('div');
-    awaitEl.id = 'awaiting-indicator';
-    awaitEl.className = 'terminal-line text-green-600 animate-pulse';
-    awaitEl.textContent = 'AWAITING CREW SIGNAL...';
-    output.appendChild(awaitEl);
-  } else {
-    // Joiner
-    const output = document.getElementById('terminal-output');
-    const awaitEl = document.createElement('div');
-    awaitEl.id = 'awaiting-indicator';
-    awaitEl.className = 'terminal-line text-green-600 animate-pulse';
-    awaitEl.textContent = 'STANDING BY FOR MISSION BRIEF...';
-    output.appendChild(awaitEl);
-  }
+  const output = document.getElementById('terminal-output');
+  const awaitEl = document.createElement('div');
+  awaitEl.id = 'awaiting-indicator';
+  awaitEl.className = 'terminal-line text-green-600 animate-pulse';
+  awaitEl.textContent = state.joinCode ? 'STANDING BY FOR MISSION BRIEF...' : 'AWAITING CREW SIGNAL...';
+  output.appendChild(awaitEl);
 
   const container = document.getElementById('terminal-container');
   if (container) container.scrollTop = container.scrollHeight;
+}
+
+async function handleCrewAssembled() {
+  const awaitEl = document.getElementById('awaiting-indicator');
+  if (awaitEl) awaitEl.remove();
+
+  // Light up panel buttons if they exist (host path only)
+  await lightUpPanelButtons();
+
+  appendToTerminal('');
+  await typeToTerminal('CREW SIGNAL CONFIRMED.');
+  await typeToTerminal(`LINK ESTABLISHED — ${state.players.length} CREW CONNECTED.`);
+  appendToTerminal('');
+  await typeToTerminal('INITIATING MISSION BRIEF...');
+
+  await wait(800);
+  state.gameState = 'scene';
+  renderScene();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PHASE 5: Scene setting
 // ─────────────────────────────────────────────────────────────────────────────
 
-function renderScene() {
+async function renderScene() {
   const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
   const contextText = roleData.context || 'You are preparing for the mission.';
 
   appendToTerminal('');
-  appendToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
+  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
   appendToTerminal('');
-  appendToTerminal('MISSION BRIEF');
-  appendToTerminal(`${state.callsign} / ${getRoleLabel(state.playerRole, state.selectedScenario)}`, 'terminal-line text-green-600 text-xs');
+  await typeToTerminal('MISSION BRIEF');
+  await typeToTerminal(`${state.callsign} / ${getRoleLabel(state.playerRole, state.selectedScenario)}`, 'terminal-line text-green-600 text-xs');
   appendToTerminal('');
 
-  // Context prose — split on sentence boundaries for terminal readability
-  contextText.split(/(?<=[.!?])\s+/).forEach(sentence => appendToTerminal(sentence));
+  for (const sentence of contextText.split(/(?<=[.!?])\s+/)) {
+    await typeToTerminal(sentence);
+  }
 
   appendToTerminal('');
-  appendToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
+  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
   appendToTerminal('');
-  appendToTerminal('You are about to improvise a space mission.');
+  await typeToTerminal('You are about to improvise a space mission.');
   appendToTerminal('');
-  appendToTerminal("There are no right answers. Technical jargon you");
-  appendToTerminal("invent is as valid as anything NASA ever wrote.");
-  appendToTerminal("Small problems are the whole game. When something");
-  appendToTerminal("doesn't make sense, talk through it and keep going.");
+  await typeToTerminal('There are no right answers. Technical jargon you');
+  await typeToTerminal("invent is as valid as anything NASA ever wrote.");
+  await typeToTerminal("Small problems are the whole game. When something");
+  await typeToTerminal("doesn't make sense, talk through it and keep going.");
   appendToTerminal('');
-  appendToTerminal('Your crew will support you. You will support them.');
+  await typeToTerminal('Your crew will support you. You will support them.');
   appendToTerminal('');
-  appendToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
+  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
   appendToTerminal('');
-  appendToTerminal('Ready to establish contact?');
+  await typeToTerminal('Ready to establish contact?');
   appendToTerminal('');
 
   state.terminalInput = '';
   showTerminalInput('Enter: ACK > ');
 }
 
-function handleSceneInput() {
+async function handleSceneInput() {
   const input = state.terminalInput.trim();
   state.terminalInput = '';
   hideTerminalInput();
 
-  appendToTerminal(`Enter: ACK > ${input}`);
+  await typeToTerminal(`Enter: ACK > ${input}`);
   appendToTerminal('');
-  appendToTerminal('LOGGED.');
+  await typeToTerminal('LOGGED.');
   appendToTerminal('');
-  appendToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
-  appendToTerminal('COMMS FULLY ESTABLISHED. ALL CREW CONNECTED.');
+  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
+  await typeToTerminal('COMMS FULLY ESTABLISHED. ALL CREW CONNECTED.');
   appendToTerminal('');
-  appendToTerminal('BEGIN TRANSMISSION.');
-  appendToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
+  await typeToTerminal('BEGIN TRANSMISSION.');
+  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
 
   setTimeout(() => {
     state.gameState = 'playing';
     lastRenderedMessageCount = -1;
     transmissionRendered = false;
     render();
-  }, 1500);
+  }, 1200);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main render — handles comms/awaiting/scene/playing states
-// (boot and auth manage their own DOM, never trigger here)
+// Main render
 // ─────────────────────────────────────────────────────────────────────────────
 
 function render() {
-  // These states manage their own rendering or are transient
   const nonRenderStates = ['boot', 'auth', 'comms', 'connecting', 'halted'];
   if (nonRenderStates.includes(state.gameState)) return;
 
-  // AWAITING: transition to scene when crew assembles
   if (state.gameState === 'awaiting') {
     if (state.awaitingDisplayed && state.players.length >= 2 && !state.crewAssembled) {
       state.crewAssembled = true;
-      const awaitEl = document.getElementById('awaiting-indicator');
-      if (awaitEl) awaitEl.remove();
-      appendToTerminal('');
-      appendToTerminal('CREW SIGNAL CONFIRMED.');
-      appendToTerminal(`LINK ESTABLISHED — ${state.players.length} CREW CONNECTED.`);
-      appendToTerminal('');
-      appendToTerminal('INITIATING MISSION BRIEF...');
-      setTimeout(() => {
-        state.gameState = 'scene';
-        renderScene();
-      }, 2000);
+      handleCrewAssembled();
     }
     return;
   }
 
-  // SCENE: no-op from Firebase callbacks (handleKeydown drives this)
   if (state.gameState === 'scene') return;
 
-  // PLAYING
   if (state.gameState === 'playing') {
     if (!document.getElementById('terminal')) {
       const app = document.getElementById('app');
@@ -449,7 +719,6 @@ function render() {
             </div>
           </div>
 
-          <!-- Mission reference panel (hidden until Phase 7) -->
           <div id="promptOverlay" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center">
             <div class="bg-black border-2 border-green-400 w-full max-w-2xl max-h-[80vh] flex flex-col">
               <div class="border-b-2 border-green-400 p-4">
@@ -463,18 +732,10 @@ function render() {
               </div>
 
               <div class="border-b-2 border-green-400 flex">
-                <button onclick="switchPromptCategory('briefing')" id="tab-briefing" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">
-                  YOUR BRIEFING
-                </button>
-                <button onclick="switchPromptCategory('generic')" id="tab-generic" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">
-                  GENERIC JARGON
-                </button>
-                <button onclick="switchPromptCategory('things')" id="tab-things" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">
-                  THINGS
-                </button>
-                <button onclick="switchPromptCategory('protocol')" id="tab-protocol" class="flex-1 p-3 text-sm hover:bg-green-900 transition">
-                  PROTOCOL
-                </button>
+                <button onclick="switchPromptCategory('briefing')" id="tab-briefing" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">YOUR BRIEFING</button>
+                <button onclick="switchPromptCategory('generic')"  id="tab-generic"  class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">GENERIC JARGON</button>
+                <button onclick="switchPromptCategory('things')"   id="tab-things"   class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">THINGS</button>
+                <button onclick="switchPromptCategory('protocol')" id="tab-protocol" class="flex-1 p-3 text-sm hover:bg-green-900 transition">PROTOCOL</button>
               </div>
 
               <div class="flex-1 overflow-y-auto p-4">
@@ -482,9 +743,7 @@ function render() {
               </div>
 
               <div class="border-t-2 border-green-400 p-4">
-                <button onclick="refreshPrompts()" class="w-full border-2 border-green-400 py-2 hover:bg-green-400 hover:text-black transition">
-                  ↻ REFRESH
-                </button>
+                <button onclick="refreshPrompts()" class="w-full border-2 border-green-400 py-2 hover:bg-green-400 hover:text-black transition">↻ REFRESH</button>
               </div>
             </div>
           </div>
@@ -538,82 +797,64 @@ function renderMessages() {
   }
 
   if (currentCount > previousCount) {
-    const newMessages = visibleMessages.slice(previousCount);
-
-    newMessages.forEach((msg) => {
-      if (msg.type === 'transmission') {
-        renderTransmission(messagesDiv, msg);
-        return;
-      }
-
-      const messageElement = document.createElement('div');
-      messageElement.className = 'terminal-line';
-      const formattedText = formatMessage(msg);
-      messagesDiv.appendChild(messageElement);
-
+    visibleMessages.slice(previousCount).forEach((msg) => {
+      if (msg.type === 'transmission') { renderTransmission(messagesDiv, msg); return; }
+      const el = document.createElement('div');
+      el.className = 'terminal-line';
+      const formatted = formatMessage(msg);
+      messagesDiv.appendChild(el);
       if (msg.role !== state.playerRole) {
-        animateMessage(messageElement, formattedText, 50);
+        animateMessage(el, formatted, 50);
       } else {
-        messageElement.outerHTML = formattedText;
+        el.outerHTML = formatted;
         scrollToBottom();
       }
     });
-
     lastRenderedMessageCount = currentCount;
   }
 
   scrollToBottom();
-
   if (state.sendStatus) updateSendStatusDisplay();
 }
 
 function renderTransmission(messagesDiv, msg) {
   if (transmissionRendered) return;
   transmissionRendered = true;
-
   const incomingEl = document.createElement('div');
   incomingEl.className = 'terminal-line text-green-400 animate-pulse';
   incomingEl.textContent = '> INCOMING PRIORITY TRANSMISSION...';
   messagesDiv.appendChild(incomingEl);
   scrollToBottom();
-
   setTimeout(() => {
     incomingEl.remove();
     const wrapper = document.createElement('div');
     wrapper.innerHTML = formatMessage(msg);
     messagesDiv.appendChild(wrapper);
     scrollToBottom();
-    // Reveal the mission data button (stop pulsing after first open)
     updatePlayingHeader();
   }, 3000);
 }
 
 function formatMessage(msg) {
-  if (msg.type === 'system') {
-    return `<div class="terminal-line text-green-600">&gt; ${escapeHtml(msg.text)}</div>`;
-  }
-  if (msg.type === 'scenario') {
-    return `<div class="terminal-line text-green-600">&gt; MISSION: ${escapeHtml(msg.text)}</div>`;
-  }
+  if (msg.type === 'system')   return `<div class="terminal-line text-green-600">&gt; ${escapeHtml(msg.text)}</div>`;
+  if (msg.type === 'scenario') return `<div class="terminal-line text-green-600">&gt; MISSION: ${escapeHtml(msg.text)}</div>`;
   if (msg.type === 'transmission') {
-    const divider = '────────────────────────────────────────────────────';
+    const d = '────────────────────────────────────────────────────';
     return `<div class="terminal-line space-y-1 my-2">
-      <div class="text-green-600">${divider}</div>
+      <div class="text-green-600">${d}</div>
       <div class="font-bold">PRIORITY TRANSMISSION — CAPCOM</div>
-      <div class="text-green-600">${divider}</div>
+      <div class="text-green-600">${d}</div>
       <div class="my-2">${escapeHtml(msg.text)}</div>
-      <div class="text-green-600">${divider}</div>
+      <div class="text-green-600">${d}</div>
       <div class="text-green-600">END TRANSMISSION</div>
-      <div class="text-green-600">${divider}</div>
+      <div class="text-green-600">${d}</div>
     </div>`;
   }
   if (msg.type === 'message') {
     const label = escapeHtml(getRoleLabel(msg.role, state.selectedScenario));
-    if (msg.role === state.playerRole) {
-      return `<div class="terminal-line text-green-300" data-own-message="true">[${label}]: ${escapeHtml(msg.text)}</div>`;
-    } else {
-      return `<div class="terminal-line">[${label}]: ${escapeHtml(msg.text)}</div>`;
-    }
+    return msg.role === state.playerRole
+      ? `<div class="terminal-line text-green-300" data-own-message="true">[${label}]: ${escapeHtml(msg.text)}</div>`
+      : `<div class="terminal-line">[${label}]: ${escapeHtml(msg.text)}</div>`;
   }
   return '';
 }
@@ -622,20 +863,15 @@ function animateMessage(element, htmlContent, speed = 20) {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = htmlContent;
   const textToAnimate = tempDiv.textContent || tempDiv.innerText;
-
-  const hasRolePrefix = htmlContent.includes('[');
   let rolePrefix = '';
   let messageText = textToAnimate;
-
-  if (hasRolePrefix && textToAnimate.includes(']:')) {
+  if (htmlContent.includes('[') && textToAnimate.includes(']:')) {
     const splitPoint = textToAnimate.indexOf(']:') + 2;
     rolePrefix = textToAnimate.substring(0, splitPoint);
     messageText = textToAnimate.substring(splitPoint);
   }
-
   element.textContent = rolePrefix;
   let index = 0;
-
   const interval = setInterval(() => {
     if (index < messageText.length) {
       element.textContent = rolePrefix + messageText.substring(0, index + 1);
@@ -649,15 +885,12 @@ function animateMessage(element, htmlContent, speed = 20) {
 
 function scrollToBottom() {
   const terminal = document.getElementById('terminal');
-  if (terminal) {
-    terminal.scrollTop = terminal.scrollHeight;
-  }
+  if (terminal) terminal.scrollTop = terminal.scrollHeight;
 }
 
 function setupInput() {
   const inputText = document.getElementById('inputText');
   if (!inputText) return;
-
   inputText.textContent = state.inputMessage;
   renderTypingIndicator();
 }
@@ -665,7 +898,6 @@ function setupInput() {
 function renderTypingIndicator() {
   const indicator = document.getElementById('typingIndicator');
   if (!indicator) return;
-
   if (state.typingPlayers.length > 0) {
     const roles = state.typingPlayers.map(role => `[${escapeHtml(getRoleLabel(role, state.selectedScenario))}]`).join('');
     indicator.innerHTML = `<div class="terminal-line text-green-600 typing-dots">${roles}<span class="dots">...</span></div>`;
@@ -677,23 +909,16 @@ function renderTypingIndicator() {
 function updateSendStatusDisplay() {
   const messagesDiv = document.getElementById('messages');
   if (!messagesDiv) return;
-
   const ownMessages = messagesDiv.querySelectorAll('[data-own-message="true"]');
-  const target = messagesDiv.querySelector('[data-pending-message]') ||
-    ownMessages[ownMessages.length - 1];
-
+  const target = messagesDiv.querySelector('[data-pending-message]') || ownMessages[ownMessages.length - 1];
   if (!target) return;
-
   const existing = target.querySelector('.send-status');
   if (existing) existing.remove();
-
   if (!state.sendStatus) return;
-
   const tag = document.createElement('span');
   tag.className = 'send-status text-green-600';
   tag.textContent = state.sendStatus === 'sending' ? ' [sending...]' : ' [sent ✓]';
   target.appendChild(tag);
-
   const inputLine = document.getElementById('inputLine');
   if (inputLine) inputLine.style.visibility = state.sendStatus === 'sending' ? 'hidden' : 'visible';
 }
@@ -701,30 +926,22 @@ function updateSendStatusDisplay() {
 function updatePlayingHeader() {
   const headerDiv = document.querySelector('.border-b-2.border-green-400');
   if (!headerDiv) return;
-
   headerDiv.innerHTML = `
     <div class="flex justify-between items-start">
       <div class="flex-1">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-3">
             <div class="font-bold">APOLLO 47 — ${escapeHtml(state.roomCode)}</div>
-            <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">
-              COPY LINK
-            </button>
+            <button onclick="copyRoomCode()" id="copyButton" class="text-xs border border-green-400 px-2 py-1 hover:bg-green-400 hover:text-black transition">COPY LINK</button>
           </div>
 
-          ${state.players.length === 1 ? `
-            <div class="text-sm text-yellow-400 animate-pulse flex-1 text-center">
-              ⚠ SUPPORT REQUESTED...AWAITING RESPONSE...
-            </div>
-          ` : `<div class="flex-1"></div>`}
+          ${state.players.length === 1
+            ? `<div class="text-sm text-yellow-400 animate-pulse flex-1 text-center">⚠ SUPPORT REQUESTED...AWAITING RESPONSE...</div>`
+            : `<div class="flex-1"></div>`}
 
           ${state.scenarioDropped
-            ? `<button onclick="togglePrompts()" id="mission-data-btn" class="text-sm border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition font-bold">
-                 MISSION DATA RECEIVED
-               </button>`
-            : `<span class="text-xs text-green-600 font-mono">MISSION DATA PENDING...</span>`
-          }
+            ? `<button onclick="togglePrompts()" id="mission-data-btn" class="text-sm border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition font-bold">MISSION DATA RECEIVED</button>`
+            : `<span class="text-xs text-green-600 font-mono">MISSION DATA PENDING...</span>`}
         </div>
 
         <div class="text-sm text-green-600">
@@ -741,29 +958,30 @@ function updatePlayingHeader() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function handleKeydown(e) {
-  // AUTH phase
   if (state.gameState === 'auth') {
+    if (state.authBusy) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAuthInput();
-    } else if (e.key === 'Backspace') {
-      e.preventDefault();
-      state.terminalInput = state.terminalInput.slice(0, -1);
-      updateTerminalInputDisplay();
-    } else if (e.key.length === 1) {
-      e.preventDefault();
-      state.terminalInput += e.key.toUpperCase();
-      updateTerminalInputDisplay();
+    } else if (state.authStep !== 2) {
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        state.terminalInput = state.terminalInput.slice(0, -1);
+        updateTerminalInputDisplay();
+      } else if (e.key.length === 1) {
+        e.preventDefault();
+        state.terminalInput += e.key.toUpperCase();
+        updateTerminalInputDisplay();
+      }
     }
     return;
   }
 
-  // COMMS phase (host Y/N)
   if (state.gameState === 'comms' && !state.joinCode) {
     if (e.key === 'y' || e.key === 'Y') {
       e.preventDefault();
-      state.gameState = 'connecting'; // prevent re-entry
+      state.gameState = 'connecting';
       acceptCommsPrompt();
     } else if (e.key === 'n' || e.key === 'N') {
       e.preventDefault();
@@ -776,12 +994,12 @@ function handleKeydown(e) {
     return;
   }
 
-  // SCENE phase (ACK prompt)
   if (state.gameState === 'scene') {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === 'Enter') {
       e.preventDefault();
       if (state.terminalInput.trim().length > 0) {
+        state.gameState = 'connecting';
         handleSceneInput();
       }
     } else if (e.key === 'Backspace') {
@@ -796,13 +1014,10 @@ function handleKeydown(e) {
     return;
   }
 
-  // PLAYING phase
   if (state.gameState !== 'playing') return;
   if (state.sendStatus === 'sending') return;
-
   const inputText = document.getElementById('inputText');
   if (!inputText) return;
-
   if (e.ctrlKey || e.metaKey || e.altKey) return;
 
   if (e.key === 'Enter') {
@@ -815,12 +1030,7 @@ function handleKeydown(e) {
     e.preventDefault();
     state.inputMessage = state.inputMessage.slice(0, -1);
     inputText.textContent = state.inputMessage;
-
-    if (state.inputMessage.length === 0) {
-      updateTypingStatus(false);
-    } else {
-      updateTypingStatus(true);
-    }
+    updateTypingStatus(state.inputMessage.length > 0);
   } else if (e.key.length === 1) {
     e.preventDefault();
     state.inputMessage += e.key;
@@ -830,38 +1040,46 @@ function handleKeydown(e) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Window-level functions (called from inline onclick handlers)
+// Window-level functions
 // ─────────────────────────────────────────────────────────────────────────────
+
+window.copyLink = async (buttonId) => {
+  const joinUrl = `${window.location.origin}${window.location.pathname}?code=${state.roomCode}`;
+  try {
+    await navigator.clipboard.writeText(joinUrl);
+    if (buttonId === 'btn-code') {
+      const display = document.getElementById('comms-code-display');
+      if (display) {
+        const orig = display.textContent;
+        display.textContent = 'LINK COPIED';
+        setTimeout(() => { display.textContent = orig; }, 1500);
+      }
+    } else if (buttonId) {
+      const btn = document.getElementById(buttonId);
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = buttonId === 'copy-inline' ? '[COPIED!]' : '[ COPIED! ]';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      }
+    }
+  } catch {
+    const btn = buttonId ? document.getElementById(buttonId) : null;
+    if (btn) { btn.textContent = '[ERROR]'; setTimeout(() => location.reload(), 1500); }
+  }
+};
 
 window.copyRoomCode = async () => {
   const button = document.getElementById('copyButton');
   if (!button) return;
-
   const joinUrl = `${window.location.origin}${window.location.pathname}?code=${state.roomCode}`;
   try {
     await navigator.clipboard.writeText(joinUrl);
-    const originalText = button.textContent;
+    const orig = button.textContent;
     button.textContent = 'COPIED!';
-    setTimeout(() => { button.textContent = originalText; }, 1500);
-  } catch (err) {
+    setTimeout(() => { button.textContent = orig; }, 1500);
+  } catch {
     button.textContent = 'ERROR';
     setTimeout(() => { button.textContent = 'COPY LINK'; }, 1500);
-  }
-};
-
-window.copyRoomCodeTerminal = async () => {
-  const button = document.getElementById('copyButtonTerminal');
-  if (!button) return;
-
-  const joinUrl = `${window.location.origin}${window.location.pathname}?code=${state.roomCode}`;
-  try {
-    await navigator.clipboard.writeText(joinUrl);
-    const originalText = button.textContent;
-    button.textContent = '[COPIED!]';
-    setTimeout(() => { button.textContent = originalText; }, 1500);
-  } catch (err) {
-    button.textContent = '[ERROR]';
-    setTimeout(() => { button.textContent = '[COPY LINK]'; }, 1500);
   }
 };
 
@@ -881,18 +1099,10 @@ window.togglePrompts = () => {
 
 window.switchPromptCategory = (category) => {
   currentPromptCategory = category;
-
   ['briefing', 'generic', 'things', 'protocol'].forEach(cat => {
     const tab = document.getElementById(`tab-${cat}`);
-    if (tab) {
-      if (cat === category) {
-        tab.classList.add('bg-green-900');
-      } else {
-        tab.classList.remove('bg-green-900');
-      }
-    }
+    if (tab) tab.classList.toggle('bg-green-900', cat === category);
   });
-
   refreshPrompts();
 };
 
@@ -904,85 +1114,57 @@ function refreshPrompts() {
 
   if (currentPromptCategory === 'briefing') {
     const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
-
     content.innerHTML = `
       <div class="space-y-4">
         <div>
           <div class="text-sm text-green-400 mb-2">YOUR ROLE:</div>
           <div class="text-lg font-bold mb-3">${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
         </div>
-
         <div>
           <div class="text-sm text-green-400 mb-2">WHERE YOU ARE:</div>
           <div class="text-sm">${escapeHtml(roleData.context || 'Preparing for mission...')}</div>
         </div>
-
         <div>
           <div class="text-sm text-green-400 mb-2">YOUR OBJECTIVE:</div>
           <div class="text-sm">${escapeHtml(roleData.briefing || 'Awaiting mission briefing...')}</div>
         </div>
-
         <div class="border-t border-green-600 pt-4">
           <div class="text-sm text-green-400 mb-2">TECHNICAL REFERENCE:</div>
           <div class="text-sm space-y-1">
             ${state.selectedScenario?.technicalDetails
-              ? state.selectedScenario.technicalDetails.map(detail =>
-                  `<div>• ${escapeHtml(detail)}</div>`
-                ).join('')
-              : '<div>No technical details available</div>'
-            }
+              ? state.selectedScenario.technicalDetails.map(d => `<div>• ${escapeHtml(d)}</div>`).join('')
+              : '<div>No technical details available</div>'}
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
   }
 
   if (currentPromptCategory === 'generic') {
     const verbs = getRandomItems(MOON_VERBS, 10);
     const adjectives = getRandomItems(EQUIPMENT_ADJECTIVES, 10);
-
     content.innerHTML = `
-      <div class="text-xs text-green-600 mb-4">
-        Combine these to create authentic-sounding technical jargon:
-      </div>
+      <div class="text-xs text-green-600 mb-4">Combine these to create authentic-sounding technical jargon:</div>
       <div class="grid grid-cols-2 gap-4 mb-4">
         <div>
           <div class="text-sm text-green-400 mb-2">VERBS</div>
-          <div class="text-sm space-y-1">
-            ${verbs.map(v => `<div class="text-green-500">${v}</div>`).join('')}
-          </div>
+          <div class="text-sm space-y-1">${verbs.map(v => `<div class="text-green-500">${v}</div>`).join('')}</div>
         </div>
         <div>
           <div class="text-sm text-green-400 mb-2">ADJECTIVES</div>
-          <div class="text-sm space-y-1">
-            ${adjectives.map(a => `<div class="text-green-500">${a}</div>`).join('')}
-          </div>
+          <div class="text-sm space-y-1">${adjectives.map(a => `<div class="text-green-500">${a}</div>`).join('')}</div>
         </div>
       </div>
-      <div class="text-xs text-green-600 mt-4 italic">
-        Example: "Degauss the auxiliary relay" or "Recalibrate the omnidirectional sensor"
-      </div>
-    `;
+      <div class="text-xs text-green-600 mt-4 italic">Example: "Degauss the auxiliary relay" or "Recalibrate the omnidirectional sensor"</div>`;
   } else if (currentPromptCategory === 'things') {
     const items = getRandomFromCategory(THINGS, 15);
     content.innerHTML = `
-      <div class="text-xs text-green-600 mb-4">
-        Physical objects, equipment, and structures you might reference:
-      </div>
-      <div class="text-sm space-y-1">
-        ${items.map(item => `<div class="text-green-500">${item}</div>`).join('')}
-      </div>
-    `;
+      <div class="text-xs text-green-600 mb-4">Physical objects, equipment, and structures you might reference:</div>
+      <div class="text-sm space-y-1">${items.map(i => `<div class="text-green-500">${i}</div>`).join('')}</div>`;
   } else if (currentPromptCategory === 'protocol') {
     const items = getRandomFromCategory(PROTOCOL, 15);
     content.innerHTML = `
-      <div class="text-xs text-green-600 mb-4">
-        Radio communication phrases and problem descriptions:
-      </div>
-      <div class="text-sm space-y-1">
-        ${items.map(item => `<div class="text-green-500">${item}</div>`).join('')}
-      </div>
-    `;
+      <div class="text-xs text-green-600 mb-4">Radio communication phrases and problem descriptions:</div>
+      <div class="text-sm space-y-1">${items.map(i => `<div class="text-green-500">${i}</div>`).join('')}</div>`;
   }
 }
 
@@ -992,11 +1174,8 @@ function refreshPrompts() {
 
 document.addEventListener('keydown', handleKeydown);
 
-// Detect join code from URL
 const urlParams = new URLSearchParams(window.location.search);
 const joinCode = urlParams.get('code');
-if (joinCode) {
-  state.joinCode = joinCode.trim().toUpperCase();
-}
+if (joinCode) state.joinCode = joinCode.trim().toUpperCase();
 
 runBootSequence();

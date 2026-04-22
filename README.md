@@ -31,13 +31,13 @@ This is a digital adaptation of [**Apollo 47**](https://timhutchings.itch.io/ap4
 
 ## Known Issues / Next Session TODOs
 
-1. **Boot sequence visual polish** — Screen should clear during boot; key moments (moon graphic, callsign assignment) should be centered for focus. Moon ASCII art needs a visual update. Treat as a fun sidequest.
+1. **Scenario mechanics and content** — Tighten the scenario loop: asynchronous information between roles (players knowing different things), pacing of the transmission drop, and overall scenario content quality.
 
-2. **Boot terminal scrolling** — The intro/boot section scrolls off the bottom of the screen before auth prompts appear. Needs scroll behaviour fixed or content trimmed.
+2. **Joiner experience** — More flashing lights and terminal activity while a new player works through onboarding. The room creator's wait should feel alive, not idle.
 
-3. **Post-join blank screen** — After both players accept the scene setting (ACK), the chat opens with no context and no prompt. Need to figure out what stage-setting copy and "make your move" text appears to cue players on how to begin.
+3. **Gameplay screen scene-setting** — The playing screen needs more environmental texture. Players need more to orient them once the chat opens.
 
-4. **Callsign generation bug** — Callsigns don't appear to be generating correctly. Re-check the `generateCallsign()` implementation in `game.js` and the timing of when `state.callsign` is set relative to `createRoom()`/`joinRoom()`.
+4. **Callsign design** — Current callsigns are functional but the design hasn't been thought through. Need a clear answer to: what are callsigns *for* in this game, how do they get used in play, and does the generation format (WORD-N) serve that?
 
 ---
 

@@ -106,7 +106,7 @@ rooms/
 - No test framework currently. Test manually in browser.
 - Open browser console (F12) for errors.
 - Firebase data is visible in Firebase Console → Realtime Database.
-- Test locally with VS Code Live Server or `python -m http.server 8000`.
+- Test locally with VS Code Live Server or `python -m http.server 8000`.  or `python3 -m http.server 8080 --directory /apollo-47-root-directory/`
 - Test multiplayer by opening two browser tabs/windows.
 
 ## Known Issues

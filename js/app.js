@@ -534,15 +534,15 @@ async function lightUpPanelButtons() {
     if (!el) continue;
     el.style.transition = 'all 0.25s ease';
     if (item.type === 'yellow') {
-      el.style.backgroundColor = '#854d0e'; // yellow-800
-      el.style.borderColor     = '#854d0e';
+      el.style.backgroundColor = '#eab308';
+      el.style.borderColor     = '#eab308';
       el.style.color           = '#000';
     } else if (item.type === 'green') {
-      el.style.backgroundColor = '#15803d'; // green-700
-      el.style.borderColor     = '#15803d';
+      el.style.backgroundColor = '#4ade80';
+      el.style.borderColor     = '#4ade80';
       el.style.color           = '#000';
     } else if (item.type === 'code') {
-      el.style.borderColor = '#4ade80'; // green-400
+      el.style.borderColor = '#4ade80';
     }
     await wait(1000);
   }
@@ -553,12 +553,46 @@ async function lightUpPanelButtons() {
 // PHASE 4: Awaiting crew
 // ─────────────────────────────────────────────────────────────────────────────
 
+async function handleIncomingConnection() {
+  const awaitEl = document.getElementById('awaiting-indicator');
+  if (awaitEl) awaitEl.remove();
+
+  const hasPanelButtons = !!document.getElementById('btn-com1');
+  if (hasPanelButtons) {
+    let blinkOn = true;
+    const blinkInterval = setInterval(() => {
+      ['btn-com1', 'btn-com2'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.transition  = 'border-color 0.15s, color 0.15s';
+        el.style.borderColor = blinkOn ? '#eab308' : '#422006';
+        el.style.color       = blinkOn ? '#fbbf24' : '#78350f';
+      });
+      blinkOn = !blinkOn;
+    }, 350);
+
+    appendToTerminal('');
+    await typeToTerminal('RECEIVING COMMUNICATIONS...');
+    await wait(800);
+    await typeToTerminal('ESTABLISHING INBOUND UPLINK...');
+    await wait(1400);
+
+    clearInterval(blinkInterval);
+    ['btn-com1', 'btn-com2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.style.transition = ''; el.style.borderColor = ''; el.style.color = ''; }
+    });
+  }
+
+  handleCrewAssembled();
+}
+
 function renderAwaiting() {
   state.awaitingDisplayed = true;
 
   if (state.players.length >= 2 && !state.crewAssembled) {
     state.crewAssembled = true;
-    handleCrewAssembled();
+    handleIncomingConnection();
     return;
   }
 
@@ -597,31 +631,16 @@ async function handleCrewAssembled() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function renderScene() {
-  const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
-  const contextText = roleData.context || 'You are preparing for the mission.';
-
   appendToTerminal('');
   await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
   appendToTerminal('');
-  await typeToTerminal('MISSION BRIEF');
-  await typeToTerminal(`${state.callsign} / ${getRoleLabel(state.playerRole, state.selectedScenario)}`, 'terminal-line text-green-600 text-xs');
-  appendToTerminal('');
 
-  for (const sentence of contextText.split(/(?<=[.!?])\s+/)) {
-    await typeToTerminal(sentence);
-  }
+  const callsignEl = document.createElement('div');
+  callsignEl.className = 'terminal-line font-bold text-green-300';
+  document.getElementById('terminal-output').appendChild(callsignEl);
+  await typeIntoElement(callsignEl, `CALLSIGN ASSIGNED: ${state.callsign}`);
+  await typeToTerminal(`ROLE: ${getRoleLabel(state.playerRole, state.selectedScenario)}`, 'terminal-line text-green-600 text-xs');
 
-  appendToTerminal('');
-  await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
-  appendToTerminal('');
-  await typeToTerminal('You are about to improvise a space mission.');
-  appendToTerminal('');
-  await typeToTerminal('There are no right answers. Technical jargon you');
-  await typeToTerminal("invent is as valid as anything NASA ever wrote.");
-  await typeToTerminal("Small problems are the whole game. When something");
-  await typeToTerminal("doesn't make sense, talk through it and keep going.");
-  appendToTerminal('');
-  await typeToTerminal('Your crew will support you. You will support them.');
   appendToTerminal('');
   await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
   appendToTerminal('');
@@ -666,7 +685,7 @@ function render() {
   if (state.gameState === 'awaiting') {
     if (state.awaitingDisplayed && state.players.length >= 2 && !state.crewAssembled) {
       state.crewAssembled = true;
-      handleCrewAssembled();
+      handleIncomingConnection();
     }
     return;
   }
@@ -675,6 +694,7 @@ function render() {
 
   if (state.gameState === 'playing') {
     if (!document.getElementById('terminal')) {
+      const roleContext = escapeHtml(getPlayerBriefing(state.playerRole, state.selectedScenario).context || '');
       const app = document.getElementById('app');
       app.innerHTML = `
         <div class="flex flex-col h-screen">
@@ -709,6 +729,11 @@ function render() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div id="context-panel" class="border-b border-green-800 px-4 pt-2 pb-3 font-mono text-xs">
+            <div class="font-bold text-green-300 tracking-wider mb-1">${escapeHtml(state.callsign)} // ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
+            <div class="text-green-600 leading-relaxed">${roleContext}</div>
           </div>
 
           <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">

@@ -2,6 +2,10 @@ import { database } from './firebase-config.js';
 import { ref, set, push, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import { getRandomScenario } from './scenarios-enhanced.js';
 
+// Preheat the Firebase WebSocket connection at module load time so the first
+// real write (createRoom) doesn't block waiting for cold-start handshake.
+onValue(ref(database, '.info/connected'), () => {});
+
 let typingTimeout = null;
 
 export const callbacks = {

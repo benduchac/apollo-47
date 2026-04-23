@@ -10,7 +10,6 @@
 //   - UNSETTLING_SCENARIOS placeholder retained for future use
 
 export const NORMAL_SCENARIOS = [
-
   // ─────────────────────────────────────────────────────────────
   // 1. CORE SAMPLE EXTRACTION
   // ─────────────────────────────────────────────────────────────
@@ -34,28 +33,28 @@ export const NORMAL_SCENARIOS = [
         label: "Field Astronaut",
         isPrimary: true,
         context:
-          "The moon's surface stretches flat in every direction — gray dust, the occasional shallow crater, black sky above. Earth is a blue crescent low on the horizon. You're kneeling at the drill site in Mare Tranquillitatis, about 400 meters southeast of the lander, both hands on the RM-11 assembly. The drill flag is planted. The sun is directly overhead — flat white light, no shadows to read the terrain by. It's been two hours. Your suit radio has been live since departure.",
+          "The moon's surface stretches flat in every direction — gray dust, the occasional shallow crater, black sky above. Earth is a blue crescent low on the horizon. You're kneeling at the drill site in Mare Tranquillitatis, about 400 meters southeast of the lander, both hands on the RM-11 assembly. The drill flag is planted. The sun is directly overhead — flat white light, no shadows to read the terrain by. You're using the drill to secure core samples on the west bank of the environmental team's proejct area. It's been two hours, and the drill isn't feeling quite right through your gloves.",
       },
       {
         id: "MissionControl",
         label: "Mission Control",
         isPrimary: false,
         context:
-          "You're at console 7 in Mission Analysis, Houston. The room is a long row of identical desks under fluorescent light. Shift started four hours ago. Three binders of EVA documentation are stacked to your left, cold coffee in a styrofoam cup to your right. The surface comms channel just opened.",
+          "You're at console 7 in Mission Analysis, Houston. The room is a long row of identical desks under fluorescent light. Your shift started four hours ago, and the air condititioners aren't working very well. Three dog-eared binders of EVA documentation are stacked to your left, cold coffee in a cardboard cup to your right. The surface comms channel just opened.",
       },
       {
         id: "EquipSpec",
         label: "Equipment Specialist",
         isPrimary: false,
         context:
-          "You're three desks from Mission Control at console 12. The RM-11 maintenance manual has been open on your screen since the EVA started — you pulled it up as a precaution. Page 47: drill resistance troubleshooting. Your headset is on the surface channel.",
+          "You're three desks from Mission Control at console 12. The RM-11 maintenance manual has been open on your screen since the EVA started — you pulled it up as a precaution. You're watching the drill telemetry lines on your screen and they seem to be climbing. You've got the book open to page 47: drill resistance troubleshooting. Your headset is on the surface channel.",
       },
       {
         id: "MedOfficer",
         label: "Medical Officer",
         isPrimary: false,
         context:
-          "You're at the flight surgeon's station in the back row of Mission Analysis. The EVA biometric feeds are on your left screen — heart rate, core temp, suit pressure. Everything is nominal. You have a sandwich next to your keyboard. The surface channel is live.",
+          "You're at the flight surgeon's station in the back row of Mission Analysis. The EVA biometric feeds are on your left screen — heart rate, core temp, suit pressure. Everything is nominal. You have a half sandwich next to your keyboard. The surface channel is live.",
       },
     ],
   },
@@ -75,7 +74,7 @@ export const NORMAL_SCENARIOS = [
     ],
 
     transmission:
-      "[CALLSIGN], Houston. We've got you at 247 degrees azimuth, we need 251. Signal is fluctuating between 2.1 and 3.8, threshold for reliable transmission is 4.0. Comm window closes in 18 minutes so — yeah, sooner rather than later on this one. Manual override is showing engaged on our end but azimuth isn't moving, so something isn't talking to something. Can you take a look at the mounting bracket while you're up there? There was a stress fracture noted in the last inspection report.",
+      "[CALLSIGN], Houston. We've got you at 247 degrees azimuth, we need 251. Signal is fluctuating between 2.1 and 3.8, threshold for reliable transmission is 4.0. Comm window closes in 18 minutes so — yeah, sooner rather than later on this one. Manual override is showing engaged on our end but azimuth isn't moving ... uhh ... the antenna guys say that they think something is jammed, or something isn't talking to something. Can you take a look at the mounting bracket while you're up there? We're trying to find the last inspection report but Peterson went down to records twenty minutes ago and isn't back yet.",
 
     roles: [
       {
@@ -83,28 +82,28 @@ export const NORMAL_SCENARIOS = [
         label: "EVA Astronaut",
         isPrimary: true,
         context:
-          "The moon's surface stretches out in every direction — gray dust, shallow craters, black sky. Earth hangs over the horizon, a blue crescent. You're on the roof of the habitat: a flat white box with LUN-03 stenciled in chipped black paint across the center. The antenna cluster towers above you — black cables, thin white aerials, and a silver dish with a tear in it from last year's meteorite storm. It's been intermittent ever since the repair team stripped the mounting bolts. Wrench in your hand. Suit radio open.",
+          "The moon's surface stretches out in every direction — gray dust, shallow craters, black sky. Earth hangs over the horizon, a blue crescent. You're on the roof of the habitat: a flat white box with LUN-03 stenciled in chipped black paint across the center. The antenna cluster towers above you — black cables, thin white aerials, and a silver dish with a tear in it from last year's meteorite storm. It's been intermittent ever since the repair team stripped the mounting bolts. The antenna needs to be aligned, and you've got the WX-10 80mm wrench in your hand.",
       },
       {
-        id: "CAPCOM",
-        label: "CAPCOM",
+        id: "MissionCommand",
+        label: "Mission Command",
         isPrimary: false,
         context:
-          "Mission Control, Houston. Your desk is third row from the front, position 4 — a laminated card taped to the console says CAPCOM in faded red letters. Two screens: flight data on the left, azimuth coordinates on the right. The numbers haven't moved in twenty minutes. Around you, fifteen other people are staring at their own screens, headsets on, doing the same thing you're doing — waiting for something to happen. Your radio is live.",
+          "Mission Control, Houston. Your desk is third row from the front, position 4 — a laminated card taped to the console says MISSION in faded red letters. You're looking at two softly glowing screens: flight data on the left, azimuth coordinates on the right. The numbers haven't moved in twenty minutes. Around you, fifteen other people are staring at their own screens, headsets on, doing the same thing you're doing — waiting for something to happen. Your radio is live.",
       },
       {
         id: "HabCrew",
         label: "Hab Crew",
         isPrimary: false,
         context:
-          "You're inside the habitat at the systems panel in the utility corridor — a narrow passage between the equipment bays, lit by a single strip of fluorescent. The voltage readouts on your board look normal. A sticky note from last week says 'CHECK RELAY 3' in someone else's handwriting. You're not sure if it's been checked. Your radio is open.",
+          "You're inside the habitat at the systems panel in the utility corridor — a narrow passage between the equipment bays, lit by a single strip of fluorescent. It smells like stale electronics, self-heated meatloaf, and recycled air. The voltage readouts on your board look normal. A sticky note from last week says 'CHECK RELAY 3' in someone else's handwriting. You're not sure if it's been checked. You can hear [CALLSIGN] moving around on the hab roof. Your radio is open.",
       },
       {
         id: "Engineer",
         label: "Systems Engineer",
         isPrimary: false,
         context:
-          "You're at engineering console 3 with the antenna technical specs on screen — a printout that had coffee spilled on it last Tuesday. Some of the margin numbers are smudged. The bracket stress fracture report from last inspection is in a folder to your right. You haven't opened it yet. Your headset is on the surface channel.",
+          "You're at engineering console 3 with the antenna technical specs on screen — a printout that had coffee spilled on it last Tuesday. Some of the margin numbers are smudged. The from last inspection is in a folder to your right - antenna brackets borderline but functional for at least two more cycles. Your headset is on the surface channel while you monitor transmission integrity.",
       },
     ],
   },
@@ -402,7 +401,6 @@ export const NORMAL_SCENARIOS = [
       },
     ],
   },
-
 ];
 
 // ─────────────────────────────────────────────────────────────

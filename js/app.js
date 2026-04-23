@@ -916,7 +916,7 @@ function render() {
             <div id="messages"></div>
             <div id="typingIndicator"></div>
             <div id="inputLine" class="terminal-line text-green-300">
-              <span>[${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}]: </span><span id="inputText"></span><span class="cursor">█</span>
+              <span>[${escapeHtml(state.callsign)}]: </span><span id="inputText"></span><span class="cursor">█</span>
             </div>
           </div>
 
@@ -970,6 +970,11 @@ function render() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Playing screen helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+function getCallsignForRole(roleId) {
+  const entry = Object.values(state.playersMap).find(p => p.role === roleId);
+  return entry?.callsign || getRoleLabel(roleId, state.selectedScenario);
+}
 
 function renderCrewManifest() {
   const el = document.getElementById('crew-manifest');
@@ -1068,7 +1073,7 @@ async function renderTransmission(messagesDiv, msg) {
     <div class="text-green-600">${d}</div>
     <div class="font-bold">PRIORITY TRANSMISSION — CAPCOM</div>
     <div class="text-green-600">${d}</div>
-    <div class="tx-body my-2 leading-relaxed space-y-1"></div>
+    <div class="tx-body my-2 leading-relaxed text-xs"></div>
     <div class="text-green-600">${d}</div>
     <div class="text-green-600">END TRANSMISSION</div>
     <div class="text-green-600">${d}</div>
@@ -1077,13 +1082,10 @@ async function renderTransmission(messagesDiv, msg) {
   scrollToBottom();
 
   const body = wrapper.querySelector('.tx-body');
-  const sentences = msg.text.split(/(?<=[.?]) /).map(s => s.trim()).filter(Boolean);
-  for (const sentence of sentences) {
-    const line = document.createElement('div');
-    line.textContent = sentence;
-    body.appendChild(line);
-    scrollToBottom();
-    await wait(1200);
+  for (let i = 0; i < msg.text.length; i++) {
+    body.textContent = msg.text.substring(0, i + 1);
+    if (i % 5 === 0) scrollToBottom();
+    await wait(18);
   }
 
   updatePlayingHeader();
@@ -1098,14 +1100,14 @@ function formatMessage(msg) {
       <div class="text-green-600">${d}</div>
       <div class="font-bold">PRIORITY TRANSMISSION — CAPCOM</div>
       <div class="text-green-600">${d}</div>
-      <div class="my-2">${escapeHtml(msg.text)}</div>
+      <div class="my-2 text-xs leading-relaxed">${escapeHtml(msg.text)}</div>
       <div class="text-green-600">${d}</div>
       <div class="text-green-600">END TRANSMISSION</div>
       <div class="text-green-600">${d}</div>
     </div>`;
   }
   if (msg.type === 'message') {
-    const label = escapeHtml(getRoleLabel(msg.role, state.selectedScenario));
+    const label = escapeHtml(getCallsignForRole(msg.role));
     return msg.role === state.playerRole
       ? `<div class="terminal-line text-green-300" data-own-message="true">[${label}]: ${escapeHtml(msg.text)}</div>`
       : `<div class="terminal-line">[${label}]: ${escapeHtml(msg.text)}</div>`;
@@ -1153,7 +1155,7 @@ function renderTypingIndicator() {
   const indicator = document.getElementById('typingIndicator');
   if (!indicator) return;
   if (state.typingPlayers.length > 0) {
-    const roles = state.typingPlayers.map(role => `[${escapeHtml(getRoleLabel(role, state.selectedScenario))}]`).join('');
+    const roles = state.typingPlayers.map(role => `[${escapeHtml(getCallsignForRole(role))}]`).join('');
     indicator.innerHTML = `<div class="terminal-line text-green-600 typing-dots">${roles}<span class="dots">...</span></div>`;
   } else {
     indicator.innerHTML = '';

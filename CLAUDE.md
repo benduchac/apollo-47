@@ -66,8 +66,8 @@ rooms/
     scenario: { title, setup, roles[] }   # technicalDetails stays client-side only
     spotlightPlayer: roleId
     players/
-      playerId1: { role, joined }
-      playerId2: { role, joined }
+      playerId1: { role, callsign, joined }
+      playerId2: { role, callsign, joined }
     messages/
       msgId: { type, role, text, timestamp, visibility }
       # type: "system" | "scenario" | "message"

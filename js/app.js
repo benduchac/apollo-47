@@ -11,18 +11,22 @@ import {
   isSupport,
   generateCallsign,
   triggerScenarioDrop,
+  signalJoinProgress,
 } from './game.js';
 
 import { escapeHtml } from './utils.js';
 import { MOON_VERBS, EQUIPMENT_ADJECTIVES, THINGS, PROTOCOL, getRandomItems, getRandomFromCategory } from './prompts.js';
 
-let currentPromptCategory = 'briefing';
+let currentPromptCategory = 'transmission';
 let lastRenderedMessageCount = 0;
 let transmissionRendered = false;
+let kickstartFlashInterval = null;
+const buttonBlinkIntervals = {};
 
 callbacks.onStateChange = render;
 callbacks.onTypingChange = renderTypingIndicator;
 callbacks.onSendStatusChange = updateSendStatusDisplay;
+callbacks.onJoinProgress = handleJoinProgress;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Terminal helpers
@@ -84,6 +88,68 @@ function updateTerminalInputDisplay() {
 }
 
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function startContextTyping(text) {
+  const el = document.getElementById('context-typed');
+  if (!el || !text) return;
+  for (let i = 0; i < text.length; i++) {
+    el.textContent = text.substring(0, i + 1);
+    await wait(8);
+  }
+}
+
+function startKickstartBanner() {
+  const banner = document.getElementById('kickstart-banner');
+  if (!banner) return;
+  let flashOn = true;
+  kickstartFlashInterval = setInterval(() => {
+    const el = document.getElementById('kickstart-banner');
+    if (!el) { clearInterval(kickstartFlashInterval); kickstartFlashInterval = null; return; }
+    el.style.borderColor = flashOn ? '#4ade80' : '#14532d';
+    flashOn = !flashOn;
+  }, 700);
+}
+
+function dismissKickstart() {
+  if (kickstartFlashInterval) {
+    clearInterval(kickstartFlashInterval);
+    kickstartFlashInterval = null;
+  }
+  const banner = document.getElementById('kickstart-banner');
+  if (!banner) return;
+  banner.style.transition = 'opacity 0.5s ease';
+  banner.style.opacity = '0';
+  setTimeout(() => banner.remove(), 500);
+}
+
+function startButtonBlink(id) {
+  if (buttonBlinkIntervals[id]) return;
+  let on = true;
+  buttonBlinkIntervals[id] = setInterval(() => {
+    const el = document.getElementById(id);
+    if (!el) { clearInterval(buttonBlinkIntervals[id]); delete buttonBlinkIntervals[id]; return; }
+    el.style.transition  = 'border-color 0.15s, color 0.15s';
+    el.style.borderColor = on ? '#eab308' : '#422006';
+    el.style.color       = on ? '#fbbf24' : '#78350f';
+    on = !on;
+  }, 350);
+}
+
+function stopAllButtonBlinks() {
+  Object.keys(buttonBlinkIntervals).forEach(id => {
+    clearInterval(buttonBlinkIntervals[id]);
+    delete buttonBlinkIntervals[id];
+    const el = document.getElementById(id);
+    if (el) { el.style.transition = ''; el.style.borderColor = ''; el.style.color = ''; }
+  });
+}
+
+function handleJoinProgress(step) {
+  const buttons = ['btn-com1', 'btn-com2', 'btn-sec1'];
+  for (let i = 0; i < step && i < buttons.length; i++) {
+    startButtonBlink(buttons[i]);
+  }
+}
 
 function rebuildTerminalLayout(preserveOutputHTML = '') {
   const app = document.getElementById('app');
@@ -205,6 +271,7 @@ async function handleAuthInput() {
     const termContainer = document.getElementById('terminal-container');
     if (termContainer) termContainer.scrollTop = termContainer.scrollHeight;
     await typeIntoElement(confirmedDiv, 'CLEARANCE CONFIRMED.');
+    signalJoinProgress(1);
     await wait(2000);
 
     showProtocolBox();
@@ -247,9 +314,11 @@ async function handleAuthInput() {
     }
 
     state.authStep = 2;
+    signalJoinProgress(2);
     state.authBusy = false;
 
   } else if (state.authStep === 2) {
+    signalJoinProgress(3);
     state.callsign = generateCallsign();
     state.gameState = 'comms';
     showCapcomConnection();
@@ -384,7 +453,7 @@ async function renderComms() {
     await typeToTerminal('Patching into active mission link...');
     await wait(600);
 
-    renderAwaiting();
+    await showJoinerConnectedPanel();
   } else {
     await typeToTerminal('CAPCOM UPLINK READY.');
     appendToTerminal('');
@@ -514,11 +583,135 @@ async function acceptCommsPrompt() {
   renderAwaiting();
 }
 
+async function showJoinerConnectedPanel() {
+  state.awaitingDisplayed = true;
+
+  const currentOutputHTML = document.getElementById('terminal-output').innerHTML;
+  const app = document.getElementById('app');
+
+  app.innerHTML = `
+    <div class="flex h-screen overflow-hidden">
+      <div id="terminal-container" class="flex-1 overflow-y-auto p-6 font-mono text-sm leading-relaxed">
+        <div id="terminal-output">${currentOutputHTML}</div>
+        <div id="terminal-input-line" class="hidden terminal-line mt-1 flex items-center">
+          <span id="terminal-prompt" class="text-green-400"></span><span id="terminal-input-text" class="text-green-300"></span><span class="cursor">█</span>
+        </div>
+      </div>
+
+      <div id="comms-panel" class="w-72 border-l-2 border-green-800 flex flex-col font-mono text-sm bg-black flex-shrink-0"
+           style="transform: translateX(100%);">
+        <div class="border-b border-green-800 p-3 text-green-600 text-xs tracking-widest font-bold">
+          ── MISSION COMMS LINK ──
+        </div>
+        <div class="p-4 flex flex-col gap-2 flex-1 overflow-y-auto">
+          <div class="text-green-700 text-xs leading-relaxed mb-2">
+            Connected to active mission<br>
+            link. Standby for crew<br>
+            assembly and mission brief.
+          </div>
+
+          <button id="btn-com1" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;COM-1&nbsp;]&nbsp;&nbsp;UPLINK CHANNEL
+          </button>
+          <button id="btn-com2" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;COM-2&nbsp;]&nbsp;&nbsp;SIGNAL VERIFY
+          </button>
+          <button id="btn-sec1" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;SEC-1&nbsp;]&nbsp;&nbsp;ENCRYPT LOCK
+          </button>
+
+          <div id="btn-code" style="opacity:0;"
+               class="border-2 border-green-600 p-4 my-1 text-center">
+            <div class="text-xs text-green-600 mb-2 tracking-widest">── CONNECTED TO ──</div>
+            <div class="text-xl font-bold text-green-300 tracking-widest">${escapeHtml(state.roomCode)}</div>
+          </div>
+
+          <button id="btn-copy" style="opacity:0;"
+                  onclick="copyLink('btn-copy')"
+                  class="text-green-400 border border-green-700 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-green-950 transition">
+            [&nbsp;COPY&nbsp;&nbsp;]&nbsp;&nbsp;SHARE UPLINK
+          </button>
+          <button id="btn-pwd1" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;PWD-1&nbsp;]&nbsp;&nbsp;AUTH TOKEN
+          </button>
+          <button id="btn-pwd2" style="opacity:0;"
+                  class="text-yellow-400 border border-yellow-800 px-3 py-1.5 text-xs text-left font-mono tracking-wide hover:bg-yellow-950 transition">
+            [&nbsp;PWD-2&nbsp;]&nbsp;&nbsp;CLEARANCE VRF
+          </button>
+        </div>
+        <div class="border-t border-green-800 p-3 text-xs text-green-800 text-center">
+          CAPCOM-VII RELAY ACTIVE
+        </div>
+      </div>
+    </div>
+  `;
+
+  await wait(80);
+  const panel = document.getElementById('comms-panel');
+  if (panel) {
+    panel.style.transition = 'transform 0.45s ease-out';
+    panel.style.transform = 'translateX(0)';
+  }
+  await wait(500);
+
+  const panelItemIds = ['btn-com1', 'btn-com2', 'btn-sec1', 'btn-code', 'btn-copy', 'btn-pwd1', 'btn-pwd2'];
+  for (const id of panelItemIds) {
+    const el = document.getElementById(id);
+    if (el) { el.style.transition = 'opacity 0.3s ease'; el.style.opacity = '1'; }
+    await wait(200);
+  }
+
+  const lightUpItems = [
+    { id: 'btn-com1', type: 'yellow' },
+    { id: 'btn-com2', type: 'yellow' },
+    { id: 'btn-sec1', type: 'yellow' },
+    { id: 'btn-code', type: 'code'   },
+    { id: 'btn-copy', type: 'green'  },
+    { id: 'btn-pwd1', type: 'yellow' },
+    { id: 'btn-pwd2', type: 'yellow' },
+  ];
+  for (const item of lightUpItems) {
+    const el = document.getElementById(item.id);
+    if (!el) continue;
+    el.style.transition = 'all 0.25s ease';
+    if (item.type === 'yellow') {
+      el.style.backgroundColor = '#eab308';
+      el.style.borderColor     = '#eab308';
+      el.style.color           = '#000';
+    } else if (item.type === 'green') {
+      el.style.backgroundColor = '#4ade80';
+      el.style.borderColor     = '#4ade80';
+      el.style.color           = '#000';
+    } else if (item.type === 'code') {
+      el.style.borderColor = '#4ade80';
+    }
+    await wait(150);
+  }
+
+  await wait(400);
+  appendToTerminal('');
+  await typeToTerminal('CREW SIGNAL CONFIRMED.');
+  await typeToTerminal(`LINK ESTABLISHED — ${state.players.length} CREW CONNECTED.`);
+  appendToTerminal('');
+  await typeToTerminal('INITIATING MISSION BRIEF...');
+  await wait(800);
+
+  state.crewAssembled = true;
+  state.gameState = 'scene';
+  renderScene();
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Panel button light-up (called when a second player connects)
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function lightUpPanelButtons() {
+  stopAllButtonBlinks();
+
   const items = [
     { id: 'btn-com1', type: 'yellow' },
     { id: 'btn-com2', type: 'yellow' },
@@ -557,31 +750,12 @@ async function handleIncomingConnection() {
   const awaitEl = document.getElementById('awaiting-indicator');
   if (awaitEl) awaitEl.remove();
 
-  const hasPanelButtons = !!document.getElementById('btn-com1');
-  if (hasPanelButtons) {
-    let blinkOn = true;
-    const blinkInterval = setInterval(() => {
-      ['btn-com1', 'btn-com2'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.style.transition  = 'border-color 0.15s, color 0.15s';
-        el.style.borderColor = blinkOn ? '#eab308' : '#422006';
-        el.style.color       = blinkOn ? '#fbbf24' : '#78350f';
-      });
-      blinkOn = !blinkOn;
-    }, 350);
-
+  if (document.getElementById('btn-com1')) {
     appendToTerminal('');
     await typeToTerminal('RECEIVING COMMUNICATIONS...');
     await wait(800);
     await typeToTerminal('ESTABLISHING INBOUND UPLINK...');
     await wait(1400);
-
-    clearInterval(blinkInterval);
-    ['btn-com1', 'btn-com2'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.style.transition = ''; el.style.borderColor = ''; el.style.color = ''; }
-    });
   }
 
   handleCrewAssembled();
@@ -694,7 +868,8 @@ function render() {
 
   if (state.gameState === 'playing') {
     if (!document.getElementById('terminal')) {
-      const roleContext = escapeHtml(getPlayerBriefing(state.playerRole, state.selectedScenario).context || '');
+      const roleContextRaw = getPlayerBriefing(state.playerRole, state.selectedScenario).context || '';
+      const roleContext = escapeHtml(roleContextRaw);
       const app = document.getElementById('app');
       app.innerHTML = `
         <div class="flex flex-col h-screen">
@@ -723,18 +898,19 @@ function render() {
                   }
                 </div>
 
-                <div class="text-sm text-green-600">
-                  ${escapeHtml(state.callsign)} / ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}
-                  ${state.scenarioDropped ? ` — ${escapeHtml(state.selectedScenario?.title || '')}` : ''}
-                </div>
               </div>
             </div>
           </div>
 
           <div id="context-panel" class="border-b border-green-800 px-4 pt-2 pb-3 font-mono text-xs">
-            <div class="font-bold text-green-300 tracking-wider mb-1">${escapeHtml(state.callsign)} // ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
-            <div class="text-green-600 leading-relaxed">${roleContext}</div>
+            <div class="font-bold text-green-300 tracking-wider mb-1">${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
+            <div class="relative">
+              <div class="text-green-600 leading-relaxed invisible select-none" aria-hidden="true">${roleContext}</div>
+              <div id="context-typed" class="absolute inset-0 text-green-600 leading-relaxed"></div>
+            </div>
           </div>
+
+          <div id="crew-manifest" class="border-b border-green-800 px-4 py-2 font-mono text-xs"></div>
 
           <div id="terminal" class="flex-1 overflow-y-auto p-4 font-mono">
             <div id="messages"></div>
@@ -757,7 +933,7 @@ function render() {
               </div>
 
               <div class="border-b-2 border-green-400 flex">
-                <button onclick="switchPromptCategory('briefing')" id="tab-briefing" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">YOUR BRIEFING</button>
+                <button onclick="switchPromptCategory('transmission')" id="tab-transmission" class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">TRANSMISSION DATA</button>
                 <button onclick="switchPromptCategory('generic')"  id="tab-generic"  class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">GENERIC JARGON</button>
                 <button onclick="switchPromptCategory('things')"   id="tab-things"   class="flex-1 p-3 text-sm border-r-2 border-green-400 hover:bg-green-900 transition">THINGS</button>
                 <button onclick="switchPromptCategory('protocol')" id="tab-protocol" class="flex-1 p-3 text-sm hover:bg-green-900 transition">PROTOCOL</button>
@@ -772,12 +948,20 @@ function render() {
               </div>
             </div>
           </div>
+          ${isPrimaryRole() ? `
+          <div id="kickstart-banner" class="fixed bottom-8 left-1/2 -translate-x-1/2 border-2 border-green-400 bg-black px-6 py-4 font-mono text-sm text-center z-10" style="max-width: 36rem;">
+            <div class="text-green-300 leading-relaxed">You're the astronaut. Give a status report, describe what you're seeing, or just check in to see if anyone is listening.</div>
+            <div class="text-green-600 text-xs mt-2">Type a message and hit return to transmit.</div>
+          </div>` : ''}
         </div>
       `;
+      startContextTyping(roleContextRaw);
+      if (isPrimaryRole()) startKickstartBanner();
     } else {
       updatePlayingHeader();
     }
 
+    renderCrewManifest();
     renderMessages();
     setupInput();
   }
@@ -786,6 +970,24 @@ function render() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Playing screen helpers
 // ─────────────────────────────────────────────────────────────────────────────
+
+function renderCrewManifest() {
+  const el = document.getElementById('crew-manifest');
+  if (!el) return;
+
+  const entries = Object.entries(state.playersMap).map(([id, player]) => {
+    const isMe = id === state.playerId;
+    const callsign = `<span class="font-bold text-green-300">${escapeHtml(player.callsign || '???')}</span>`;
+    const roleLabel = getRoleLabel(player.role, state.selectedScenario);
+    const role = `<span class="text-green-700">[${escapeHtml(roleLabel)}]</span>`;
+    const tag = isMe ? ` <span class="text-green-800">[you]</span>` : '';
+    return `${callsign} / ${role}${tag}`;
+  });
+
+  el.innerHTML = entries.length
+    ? `<span class="text-green-700">CREW:</span> ${entries.join('<span class="text-green-800"> || </span>')}`
+    : '';
+}
 
 function appendPendingMessage(text) {
   const messagesDiv = document.getElementById('messages');
@@ -838,26 +1040,53 @@ function renderMessages() {
     lastRenderedMessageCount = currentCount;
   }
 
+  if (document.getElementById('kickstart-banner')) {
+    const playerHasSent = state.messages.some(m => m.type === 'message' && m.role === state.playerRole);
+    if (playerHasSent) dismissKickstart();
+  }
+
   scrollToBottom();
   if (state.sendStatus) updateSendStatusDisplay();
 }
 
-function renderTransmission(messagesDiv, msg) {
+async function renderTransmission(messagesDiv, msg) {
   if (transmissionRendered) return;
   transmissionRendered = true;
+
   const incomingEl = document.createElement('div');
   incomingEl.className = 'terminal-line text-green-400 animate-pulse';
   incomingEl.textContent = '> INCOMING PRIORITY TRANSMISSION...';
   messagesDiv.appendChild(incomingEl);
   scrollToBottom();
-  setTimeout(() => {
-    incomingEl.remove();
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = formatMessage(msg);
-    messagesDiv.appendChild(wrapper);
+  await wait(3000);
+  incomingEl.remove();
+
+  const d = '────────────────────────────────────────────────────';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'terminal-line space-y-1 my-2';
+  wrapper.innerHTML = `
+    <div class="text-green-600">${d}</div>
+    <div class="font-bold">PRIORITY TRANSMISSION — CAPCOM</div>
+    <div class="text-green-600">${d}</div>
+    <div class="tx-body my-2 leading-relaxed space-y-1"></div>
+    <div class="text-green-600">${d}</div>
+    <div class="text-green-600">END TRANSMISSION</div>
+    <div class="text-green-600">${d}</div>
+  `;
+  messagesDiv.appendChild(wrapper);
+  scrollToBottom();
+
+  const body = wrapper.querySelector('.tx-body');
+  const sentences = msg.text.split(/(?<=[.?]) /).map(s => s.trim()).filter(Boolean);
+  for (const sentence of sentences) {
+    const line = document.createElement('div');
+    line.textContent = sentence;
+    body.appendChild(line);
     scrollToBottom();
-    updatePlayingHeader();
-  }, 3000);
+    await wait(1200);
+  }
+
+  updatePlayingHeader();
 }
 
 function formatMessage(msg) {
@@ -967,11 +1196,6 @@ function updatePlayingHeader() {
           ${state.scenarioDropped
             ? `<button onclick="togglePrompts()" id="mission-data-btn" class="text-sm border-2 border-green-400 px-4 py-2 hover:bg-green-400 hover:text-black transition font-bold">MISSION DATA RECEIVED</button>`
             : `<span class="text-xs text-green-600 font-mono">MISSION DATA PENDING...</span>`}
-        </div>
-
-        <div class="text-sm text-green-600">
-          ${escapeHtml(state.callsign)} / ${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}
-          ${state.scenarioDropped ? ` — ${escapeHtml(state.selectedScenario?.title || '')}` : ''}
         </div>
       </div>
     </div>
@@ -1115,7 +1339,7 @@ window.togglePrompts = () => {
   if (btn) btn.classList.remove('animate-pulse');
   if (overlay.classList.contains('hidden')) {
     overlay.classList.remove('hidden');
-    currentPromptCategory = 'briefing';
+    currentPromptCategory = 'transmission';
     refreshPrompts();
   } else {
     overlay.classList.add('hidden');
@@ -1124,7 +1348,7 @@ window.togglePrompts = () => {
 
 window.switchPromptCategory = (category) => {
   currentPromptCategory = category;
-  ['briefing', 'generic', 'things', 'protocol'].forEach(cat => {
+  ['transmission', 'generic', 'things', 'protocol'].forEach(cat => {
     const tab = document.getElementById(`tab-${cat}`);
     if (tab) tab.classList.toggle('bg-green-900', cat === category);
   });
@@ -1137,29 +1361,23 @@ function refreshPrompts() {
   const content = document.getElementById('promptContent');
   if (!content) return;
 
-  if (currentPromptCategory === 'briefing') {
+  if (currentPromptCategory === 'transmission') {
     const roleData = getPlayerBriefing(state.playerRole, state.selectedScenario);
+    const transmissionText = state.selectedScenario?.transmission
+      ? state.selectedScenario.transmission.replace('[CALLSIGN]', state.callsign)
+      : null;
     content.innerHTML = `
-      <div class="space-y-4">
+      <div class="space-y-6">
         <div>
-          <div class="text-sm text-green-400 mb-2">YOUR ROLE:</div>
-          <div class="text-lg font-bold mb-3">${escapeHtml(getRoleLabel(state.playerRole, state.selectedScenario))}</div>
+          <div class="text-sm text-green-400 mb-2">SITUATION:</div>
+          <div class="text-sm leading-relaxed">${escapeHtml(roleData.context || '')}</div>
         </div>
-        <div>
-          <div class="text-sm text-green-400 mb-2">WHERE YOU ARE:</div>
-          <div class="text-sm">${escapeHtml(roleData.context || 'Preparing for mission...')}</div>
-        </div>
-        <div>
-          <div class="text-sm text-green-400 mb-2">YOUR OBJECTIVE:</div>
-          <div class="text-sm">${escapeHtml(roleData.briefing || 'Awaiting mission briefing...')}</div>
-        </div>
-        <div class="border-t border-green-600 pt-4">
-          <div class="text-sm text-green-400 mb-2">TECHNICAL REFERENCE:</div>
-          <div class="text-sm space-y-1">
-            ${state.selectedScenario?.technicalDetails
-              ? state.selectedScenario.technicalDetails.map(d => `<div>• ${escapeHtml(d)}</div>`).join('')
-              : '<div>No technical details available</div>'}
-          </div>
+        <div class="border-t border-green-800 pt-4">
+          <div class="text-sm text-green-400 mb-2">TRANSMISSIONS:</div>
+          ${state.scenarioDropped && transmissionText
+            ? `<div class="text-sm leading-relaxed">${escapeHtml(transmissionText)}</div>`
+            : `<div class="text-xs text-green-700 italic">AWAITING PRIORITY TRANSMISSION...</div>`
+          }
         </div>
       </div>`;
   }

@@ -1,6 +1,6 @@
 import { database } from './firebase-config.js';
 import { ref, set, push, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-import { getRandomScenario } from './scenarios-enhanced.js';
+import { getRandomScenario } from './scenarios-v2.js';
 
 // Preheat the Firebase WebSocket connection at module load time so the first
 // real write (createRoom) doesn't block waiting for cold-start handshake.
@@ -12,6 +12,7 @@ export const callbacks = {
   onStateChange: null,
   onTypingChange: null,
   onSendStatusChange: null,
+  onJoinProgress: null,
 };
 
 export const state = {
@@ -20,6 +21,7 @@ export const state = {
   playerRole: '',
   playerId: Math.random().toString(36).substring(7),
   players: [],
+  playersMap: {},
   messages: [],
   spotlightPlayer: '',
   inputMessage: '',
@@ -38,6 +40,7 @@ export const state = {
   // Phase 7
   scenarioDropped: false,
   scenarioDropTimer: null,
+  joinBeaconStep: 0,
 };
 
 const CALLSIGN_WORDS = [
@@ -53,6 +56,12 @@ export function generateCallsign() {
   const word = CALLSIGN_WORDS[Math.floor(Math.random() * CALLSIGN_WORDS.length)];
   const num = Math.floor(Math.random() * 9) + 1;
   return `${word}-${num}`;
+}
+
+export async function signalJoinProgress(step) {
+  if (!state.joinCode) return;
+  const beaconRef = ref(database, `rooms/${state.joinCode}/joining/${state.playerId}`);
+  await set(beaconRef, { step, timestamp: Date.now() });
 }
 
 export function getPlayerBriefing(role, scenario) {
@@ -152,9 +161,9 @@ export async function createRoom() {
     created: Date.now(),
     scenario: {
       title: scenario.title,
-      setup: scenario.setup,
       roles: scenario.roles,
-      technicalDetails: scenario.technicalDetails || []
+      technicalDetails: scenario.technicalDetails || [],
+      transmission: scenario.transmission || null,
     },
     spotlightPlayer: primaryRole,
     scenarioDropped: false,
@@ -237,7 +246,7 @@ export async function triggerScenarioDrop() {
   const messagesRef = ref(database, `rooms/${state.roomCode}/messages`);
   await push(messagesRef, {
     type: 'transmission',
-    text: state.selectedScenario.setup,
+    text: state.selectedScenario.transmission.replace('[CALLSIGN]', state.callsign),
     timestamp: Date.now(),
     visibility: 'all'
   });
@@ -276,8 +285,8 @@ export function listenToRoom(code) {
     // Phase 7: start scenario drop timer after 6 player messages
     if (state.gameState === 'playing' && !state.scenarioDropped && !state.scenarioDropTimer) {
       const playerMsgCount = state.messages.filter(m => m.type === 'message').length;
-      if (playerMsgCount >= 6) {
-        state.scenarioDropTimer = setTimeout(triggerScenarioDrop, 30000);
+      if (playerMsgCount >= 3) {
+        state.scenarioDropTimer = setTimeout(triggerScenarioDrop, 50000);
       }
     }
 
@@ -286,8 +295,11 @@ export function listenToRoom(code) {
 
   onValue(playersRef, (snapshot) => {
     state.players = [];
+    state.playersMap = {};
     snapshot.forEach((child) => {
-      state.players.push(child.val().role);
+      const player = child.val();
+      state.players.push(player.role);
+      state.playersMap[child.key] = { role: player.role, callsign: player.callsign || '' };
     });
     callbacks.onStateChange?.();
   });
@@ -300,6 +312,21 @@ export function listenToRoom(code) {
         state.scenarioDropTimer = null;
       }
       callbacks.onStateChange?.();
+    }
+  });
+
+  const joiningRef = ref(database, `rooms/${code}/joining`);
+  onValue(joiningRef, (snapshot) => {
+    let maxStep = 0;
+    snapshot.forEach((child) => {
+      if (child.key !== state.playerId) {
+        const data = child.val();
+        if (data && data.step > maxStep) maxStep = data.step;
+      }
+    });
+    if (maxStep > state.joinBeaconStep) {
+      state.joinBeaconStep = maxStep;
+      callbacks.onJoinProgress?.(maxStep);
     }
   });
 

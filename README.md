@@ -37,7 +37,7 @@ This is a digital adaptation of [**Apollo 47**](https://timhutchings.itch.io/ap4
 
 3. **Gameplay screen scene-setting** — The playing screen needs more environmental texture. Players need more to orient them once the chat opens.
 
-4. **Callsign design** — Current callsigns are functional but the design hasn't been thought through. Need a clear answer to: what are callsigns *for* in this game, how do they get used in play, and does the generation format (WORD-N) serve that?
+4. **CRT visual effects** — Scanlines, phosphor glow, screen curvature.
 
 ---
 

@@ -9,7 +9,6 @@ import {
   updateTypingStatus,
   isPrimaryRole,
   isSupport,
-  generateCallsign,
   triggerScenarioDrop,
   signalJoinProgress,
 } from './game.js';
@@ -319,7 +318,6 @@ async function handleAuthInput() {
 
   } else if (state.authStep === 2) {
     signalJoinProgress(3);
-    state.callsign = generateCallsign();
     state.gameState = 'comms';
     showCapcomConnection();
   }
@@ -662,7 +660,7 @@ async function showJoinerConnectedPanel() {
   for (const id of panelItemIds) {
     const el = document.getElementById(id);
     if (el) { el.style.transition = 'opacity 0.3s ease'; el.style.opacity = '1'; }
-    await wait(200);
+    await wait(1000);
   }
 
   const lightUpItems = [
@@ -677,19 +675,8 @@ async function showJoinerConnectedPanel() {
   for (const item of lightUpItems) {
     const el = document.getElementById(item.id);
     if (!el) continue;
-    el.style.transition = 'all 0.25s ease';
-    if (item.type === 'yellow') {
-      el.style.backgroundColor = '#eab308';
-      el.style.borderColor     = '#eab308';
-      el.style.color           = '#000';
-    } else if (item.type === 'green') {
-      el.style.backgroundColor = '#4ade80';
-      el.style.borderColor     = '#4ade80';
-      el.style.color           = '#000';
-    } else if (item.type === 'code') {
-      el.style.borderColor = '#4ade80';
-    }
-    await wait(150);
+    await flashThenLight(el, item.type);
+    await wait(1000);
   }
 
   await wait(400);
@@ -709,6 +696,30 @@ async function showJoinerConnectedPanel() {
 // Panel button light-up (called when a second player connects)
 // ─────────────────────────────────────────────────────────────────────────────
 
+async function flashThenLight(el, type) {
+  const litColor = (type === 'yellow') ? '#eab308' : '#4ade80';
+  const dimColor = (type === 'yellow') ? '#92400e' : '#15803d';
+  el.style.transition = 'none';
+  for (let i = 0; i < 2; i++) {
+    el.style.borderColor = litColor;
+    await wait(80);
+    el.style.borderColor = dimColor;
+    await wait(80);
+  }
+  el.style.transition = 'all 0.25s ease';
+  if (type === 'yellow') {
+    el.style.backgroundColor = '#eab308';
+    el.style.borderColor     = '#eab308';
+    el.style.color           = '#000';
+  } else if (type === 'green') {
+    el.style.backgroundColor = '#4ade80';
+    el.style.borderColor     = '#4ade80';
+    el.style.color           = '#000';
+  } else if (type === 'code') {
+    el.style.borderColor = '#4ade80';
+  }
+}
+
 async function lightUpPanelButtons() {
   stopAllButtonBlinks();
 
@@ -725,18 +736,7 @@ async function lightUpPanelButtons() {
   for (const item of items) {
     const el = document.getElementById(item.id);
     if (!el) continue;
-    el.style.transition = 'all 0.25s ease';
-    if (item.type === 'yellow') {
-      el.style.backgroundColor = '#eab308';
-      el.style.borderColor     = '#eab308';
-      el.style.color           = '#000';
-    } else if (item.type === 'green') {
-      el.style.backgroundColor = '#4ade80';
-      el.style.borderColor     = '#4ade80';
-      el.style.color           = '#000';
-    } else if (item.type === 'code') {
-      el.style.borderColor = '#4ade80';
-    }
+    await flashThenLight(el, item.type);
     await wait(1000);
   }
   await wait(500);
@@ -809,11 +809,8 @@ async function renderScene() {
   await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
   appendToTerminal('');
 
-  const callsignEl = document.createElement('div');
-  callsignEl.className = 'terminal-line font-bold text-green-300';
-  document.getElementById('terminal-output').appendChild(callsignEl);
-  await typeIntoElement(callsignEl, `CALLSIGN ASSIGNED: ${state.callsign}`);
-  await typeToTerminal(`ROLE: ${getRoleLabel(state.playerRole, state.selectedScenario)}`, 'terminal-line text-green-600 text-xs');
+  await typeToTerminal('FOLLOW MISSION PROTOCOLS', 'terminal-line text-green-300 font-bold');
+  await typeToTerminal('COMPLETE YOUR ASSIGNED TASK', 'terminal-line text-green-300 font-bold');
 
   appendToTerminal('');
   await typeToTerminal('────────────────────────────────────────────────────', 'terminal-line text-green-600');
@@ -980,13 +977,23 @@ function renderCrewManifest() {
   const el = document.getElementById('crew-manifest');
   if (!el) return;
 
-  const entries = Object.entries(state.playersMap).map(([id, player]) => {
+  const primaryRoleId = state.selectedScenario?.roles?.find(r => r.isPrimary)?.id;
+
+  const sorted = Object.entries(state.playersMap).sort(([idA], [idB]) => {
+    if (idA === state.playerId) return -1;
+    if (idB === state.playerId) return 1;
+    return 0;
+  });
+
+  const entries = sorted.map(([id, player]) => {
     const isMe = id === state.playerId;
+    const isPrimary = player.role === primaryRoleId;
     const callsign = `<span class="font-bold text-green-300">${escapeHtml(player.callsign || '???')}</span>`;
     const roleLabel = getRoleLabel(player.role, state.selectedScenario);
     const role = `<span class="text-green-700">[${escapeHtml(roleLabel)}]</span>`;
-    const tag = isMe ? ` <span class="text-green-800">[you]</span>` : '';
-    return `${callsign} / ${role}${tag}`;
+    const primaryTag = isPrimary ? ` <span class="text-yellow-400">[PRIMARY]</span>` : '';
+    const meTag = isMe ? ` <span class="text-green-800">[you]</span>` : '';
+    return `${callsign} / ${role}${primaryTag}${meTag}`;
   });
 
   el.innerHTML = entries.length
@@ -1074,9 +1081,6 @@ async function renderTransmission(messagesDiv, msg) {
     <div class="font-bold">PRIORITY TRANSMISSION — CAPCOM</div>
     <div class="text-green-600">${d}</div>
     <div class="tx-body my-2 leading-relaxed text-xs"></div>
-    <div class="text-green-600">${d}</div>
-    <div class="text-green-600">END TRANSMISSION</div>
-    <div class="text-green-600">${d}</div>
   `;
   messagesDiv.appendChild(wrapper);
   scrollToBottom();
@@ -1087,6 +1091,13 @@ async function renderTransmission(messagesDiv, msg) {
     if (i % 5 === 0) scrollToBottom();
     await wait(18);
   }
+
+  wrapper.insertAdjacentHTML('beforeend', `
+    <div class="text-green-600">${d}</div>
+    <div class="text-green-600">END TRANSMISSION</div>
+    <div class="text-green-600">${d}</div>
+  `);
+  scrollToBottom();
 
   updatePlayingHeader();
 }

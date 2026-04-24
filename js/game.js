@@ -58,6 +58,16 @@ export function generateCallsign() {
   return `${word}-${num}`;
 }
 
+function resolveCallsign(roleId, scenario) {
+  if (scenario && scenario.roles) {
+    const roleData = scenario.roles.find(r => r.id === roleId);
+    if (roleData && roleData.useRandomCallsign === false) {
+      return roleData.callsign || roleData.label;
+    }
+  }
+  return generateCallsign();
+}
+
 export async function signalJoinProgress(step) {
   if (!state.joinCode) return;
   const beaconRef = ref(database, `rooms/${state.joinCode}/joining/${state.playerId}`);
@@ -151,6 +161,7 @@ export async function createRoom() {
 
   const primaryRole = scenario.roles[0].id;
   state.playerRole = primaryRole;
+  state.callsign = resolveCallsign(primaryRole, scenario);
   state.spotlightPlayer = primaryRole;
   state.gameState = 'awaiting';
   state.crewAssembled = false;
@@ -212,6 +223,7 @@ export async function joinRoom(code) {
   } else {
     state.playerRole = 'Support';
   }
+  state.callsign = resolveCallsign(state.playerRole, roomData.scenario);
 
   const playerRef = ref(database, `rooms/${code}/players/${state.playerId}`);
   await set(playerRef, {

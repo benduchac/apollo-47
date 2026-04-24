@@ -17,6 +17,7 @@ export const NORMAL_SCENARIOS = [
         id: "FieldAstronaut",
         label: "Field Astronaut",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "It's the two-hour mark of your EVA. You're kneeling at the drill site in Mare Tranquillitatis, about 400 meters southeast of the lander. Sun is directly overhead — flat white light, no shadows to read the terrain by. Both hands on the drill assembly. Your suit radio has been live since departure.",
         briefing:
@@ -26,6 +27,8 @@ export const NORMAL_SCENARIOS = [
         id: "MissionControl",
         label: "Mission Control",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Mission",
         context:
           "You're at console 7 in Mission Analysis, Houston. Shift started four hours ago. Three binders of EVA documentation are stacked to your left, cold coffee in a styrofoam cup to your right. The surface comms channel just opened.",
         briefing:
@@ -35,6 +38,8 @@ export const NORMAL_SCENARIOS = [
         id: "EquipSpec",
         label: "Equipment Specialist",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Ops",
         context:
           "You're three desks from Mission Control at console 12. You pulled up the RM-11 maintenance manual when the EVA started — it's still open on your screen. Your headset is on the surface channel.",
         briefing:
@@ -44,6 +49,8 @@ export const NORMAL_SCENARIOS = [
         id: "MedOfficer",
         label: "Medical Officer",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Med",
         context:
           "You're at the flight surgeon's station, watching the EVA biometric feeds. Suit telemetry is all nominal. You have a sandwich next to your keyboard. The surface channel is live.",
         briefing:
@@ -70,6 +77,7 @@ export const NORMAL_SCENARIOS = [
         id: "EVAAstronaut",
         label: "EVA Astronaut",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're on the habitat rooftop access platform, about three meters above the lunar surface. Safety-tethered to the rail. The high-gain antenna assembly is right in front of you — large dish, manual crank mechanism. Wrench in your left hand. Your suit radio is live.",
         briefing:
@@ -79,6 +87,8 @@ export const NORMAL_SCENARIOS = [
         id: "CAPCOM",
         label: "CAPCOM",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "CAPCOM",
         context:
           "You're at the CAPCOM desk in Houston, ninety minutes into your shift. The antenna alignment window opened twenty minutes ago. Your screen is showing azimuth coordinates. You've checked them twice. Your radio is live.",
         briefing:
@@ -88,6 +98,8 @@ export const NORMAL_SCENARIOS = [
         id: "HabCrew",
         label: "Hab Crew",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Hab",
         context:
           "You're inside the habitat at the systems panel in the utility corridor. You can hear the EVA channel through your headset. The voltage readouts on your board look normal. Your radio is open.",
         briefing:
@@ -97,6 +109,8 @@ export const NORMAL_SCENARIOS = [
         id: "Engineer",
         label: "Systems Engineer",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Ops",
         context:
           "You're at engineering console 3 with the antenna technical specs on screen — a printout that had coffee spilled on it last Tuesday. Some of the margin numbers are smudged. Your headset is on the surface channel.",
         briefing:
@@ -123,6 +137,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut 1",
         label: "Field Astronaut",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're standing in a shallow crater about 600 meters from the lander. The sun is low and to your left, long shadows stretching across the regolith. Mallet in your right hand. Several bent titanium stakes are scattered in the dust around you. Your suit radio is live.",
         briefing:
@@ -132,6 +147,8 @@ export const NORMAL_SCENARIOS = [
         id: "PI",
         label: "Principal Investigator",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Science",
         context:
           "You're at a research terminal at the University of Houston, patched into the NASA comms relay. It's 2pm local. Your experiment protocol is open on your laptop, printed stake placement diagram beside it. Your comms channel is live.",
         briefing:
@@ -141,6 +158,8 @@ export const NORMAL_SCENARIOS = [
         id: "Commander",
         label: "Mission Commander",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Command",
         context:
           "You're at the command console in the Mission Analysis room, clipboard in hand. Someone drew a small cartoon in the lower margin last week and you keep noticing it. The EVA resource log is open in front of you. Radio is live.",
         briefing:
@@ -150,6 +169,8 @@ export const NORMAL_SCENARIOS = [
         id: "Medical",
         label: "Medical",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Med",
         context:
           "You're at the flight surgeon station, watching the EVA astronaut's biometrics. Heart rate is elevated and still climbing. The EVA time log is open on your left screen. Radio is live.",
         briefing:
@@ -176,6 +197,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut1",
         label: "Astronaut 1",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're at the rim of a secondary crater, about 800 meters from the lander. The sun is at a low angle right now — the light you've been waiting for, the one that throws the crater wall features into sharp relief. The Hasselblad is in both gloved hands. Your suit radio is live.",
         briefing:
@@ -185,6 +207,8 @@ export const NORMAL_SCENARIOS = [
         id: "PhotoLead",
         label: "Photography Analysis Lead",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Science",
         context:
           "You're at the science support console in Houston, printed shot list beside your keyboard. You've been coordinating this documentation session for two months. The comms channel just opened. You're watching the lighting window on your timeline.",
         briefing:
@@ -194,6 +218,8 @@ export const NORMAL_SCENARIOS = [
         id: "GeoTeam",
         label: "Geology Team",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Geo",
         context:
           "You're at the geology console, two seats from the Photography Lead. Your paper deadline is November. You have your documentation requirements open on screen. The comms channel is live.",
         briefing:
@@ -203,6 +229,7 @@ export const NORMAL_SCENARIOS = [
         id: "SupportCrew",
         label: "Astronaut 2",
         isPrimary: false,
+        useRandomCallsign: true,
         context:
           "You're at the rover, about 400 meters from Astronaut 1. You can see them at the crater rim if you shade your visor. The equipment cache is on the rear rack. Your suit radio is live.",
         briefing:
@@ -229,6 +256,7 @@ export const NORMAL_SCENARIOS = [
         id: "RoverPilot",
         label: "Rover Pilot",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're in the rover driver's seat, parked on a slope in the Taurus-Littrow valley, about 4.2 kilometers southwest of base. The rover is tilted slightly to your left. Six sample sites still to reach. You've been looking at the navigation display for the past few minutes. Your comms panel is live.",
         briefing:
@@ -238,6 +266,8 @@ export const NORMAL_SCENARIOS = [
         id: "NavOfficer",
         label: "Navigation Officer",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Nav",
         context:
           "You're at the navigation console in Houston. The rover position data on your screen puts it somewhere different from what the pilot is reporting. You've verified your numbers twice. Your radio is live.",
         briefing:
@@ -247,6 +277,8 @@ export const NORMAL_SCENARIOS = [
         id: "BaseCrew",
         label: "Base Crew",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Hab",
         context:
           "You're at the hab engineering terminal with the paper navigation manual open in front of you. Someone circled something on page 47 in pencil but the handwriting is illegible. Your comms channel is live.",
         briefing:
@@ -256,6 +288,8 @@ export const NORMAL_SCENARIOS = [
         id: "MissionControl",
         label: "Mission Control",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Mission",
         context:
           "You're at the Mission Control console, EVA timeline on your left screen, battery projection on your right. The math is tighter than you'd like. Your radio is live.",
         briefing:
@@ -282,6 +316,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut1",
         label: "Field Astronaut",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're walking slowly across open regolith, about 300 meters from the lander. The seismometer assembly is in both arms — light out here, but awkward to carry. The cable runs out behind you toward the power source. Your wrist display shows the instrument is active. Your suit radio is live.",
         briefing:
@@ -291,6 +326,8 @@ export const NORMAL_SCENARIOS = [
         id: "SciTeam",
         label: "Science Team",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Science",
         context:
           "You're at the geophysics console in Houston, watching the seismometer telemetry. The signal trace is very cluttered. You have geological survey maps of the deployment area open on your left screen. Your radio is live.",
         briefing:
@@ -300,6 +337,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut2",
         label: "Astronaut 2",
         isPrimary: false,
+        useRandomCallsign: true,
         context:
           "You're standing still about 100 meters from Astronaut 1, watching them and the terrain ahead of them. Your suit radio is live.",
         briefing:
@@ -309,6 +347,8 @@ export const NORMAL_SCENARIOS = [
         id: "Control",
         label: "Mission Control",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Control",
         context:
           "You're at your console with the cable routing diagram in front of you. The maximum tether distance is marked in red. You've measured the 50-meter limit three times already. Your radio is open.",
         briefing:
@@ -335,6 +375,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut1",
         label: "Astronaut 1",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're in the zero-gravity utility section of the lunar waystation, floating near the water reclamation assembly. Tools are clipped to your belt on lanyards — one wrench drifted about two meters to your left while you had the access panel off. The filter housing is open in front of you. Your suit radio is live.",
         briefing:
@@ -344,6 +385,8 @@ export const NORMAL_SCENARIOS = [
         id: "SysEngineer",
         label: "Systems Engineer",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Sys",
         context:
           "You're in the adjacent module with the 23-step maintenance procedure open on your tablet. You're on step 3 and something doesn't quite match what you're expecting. Your comms channel is open.",
         briefing:
@@ -353,6 +396,8 @@ export const NORMAL_SCENARIOS = [
         id: "MedOfficer",
         label: "Medical Officer",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Med",
         context:
           "You're at the medical station, one module over. The water reserve gauge on your panel reads 4.2 days at current consumption. Your radio is open.",
         briefing:
@@ -362,6 +407,8 @@ export const NORMAL_SCENARIOS = [
         id: "Commander",
         label: "Commander",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Command",
         context:
           "You're at the command console in the forward module, mission schedule open on your tablet. You have two other activities scheduled this afternoon. Your radio is live.",
         briefing:
@@ -388,6 +435,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut1",
         label: "Astronaut 1",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're in the pre-EVA staging area, suited up, helmet locked, life support running. EVA is scheduled in twenty-eight minutes. You're working through the pre-departure checklist. The pressure reading on your wrist display has your full attention. Your radio is live.",
         briefing:
@@ -397,6 +445,8 @@ export const NORMAL_SCENARIOS = [
         id: "SuitTech",
         label: "Suit Technician",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Ops",
         context:
           "You're at the suit technician console in Houston. Suit telemetry from the EVA prep is on your screen — pressure, thermal, life support feeds. You have the suit schematic open on your left monitor. 847 labeled seal points. It's not a great diagram. Your radio is live.",
         briefing:
@@ -406,6 +456,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut2",
         label: "Astronaut 2",
         isPrimary: false,
+        useRandomCallsign: true,
         context:
           "You're in the pre-EVA staging area, suited up and waiting for your own departure window. You have the suit diagnostic checklist on your forearm display. The index is organized but there's nothing labeled 'leak' or 'pressure'. Your radio is live.",
         briefing:
@@ -415,6 +466,8 @@ export const NORMAL_SCENARIOS = [
         id: "FlightSurgeon",
         label: "Flight Surgeon",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Flight",
         context:
           "You're at the flight surgeon's station, monitoring pre-EVA suit telemetry. The EVA safety parameters are open on your screen. You have a pen in your hand. Your radio is live.",
         briefing:
@@ -441,6 +494,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut1",
         label: "EVA Astronaut",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're on the solar array platform, about two meters above the lunar surface, safety-tethered to the main array strut. The panels stretch out in front of you — 24 square meters of glass. You have the soft-bristle cleaning kit in your right hand. The dust is already clinging to your gloves. Your suit radio is live.",
         briefing:
@@ -450,6 +504,8 @@ export const NORMAL_SCENARIOS = [
         id: "PowerSys",
         label: "Power Systems",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Power",
         context:
           "You're at the power systems console in Houston, watching the solar efficiency readout. The number updates every three seconds. Your radio is live.",
         briefing:
@@ -459,6 +515,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut2",
         label: "Astronaut 2",
         isPrimary: false,
+        useRandomCallsign: true,
         context:
           "You're on the ground below the array platform, watching the tether routing and cable layout above. There are a lot of cables up there and they're all the same color. Your suit radio is live.",
         briefing:
@@ -468,6 +525,8 @@ export const NORMAL_SCENARIOS = [
         id: "Control",
         label: "Mission Control",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Mission",
         context:
           "You're at your console with the panel cleaning procedure on your screen. There are diagrams. Your radio is open.",
         briefing:
@@ -494,6 +553,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut 1",
         label: "EVA Astronaut",
         isPrimary: true,
+        useRandomCallsign: true,
         context:
           "You're on the equipment bay exterior, east face of the habitat, safety-tethered to the handhold rail. You came out here for a visual inspection of the external thermal systems — standard post-EVA protocol. The sun is hitting this face directly. Your radio is live.",
         briefing:
@@ -503,6 +563,8 @@ export const NORMAL_SCENARIOS = [
         id: "ThermalEng",
         label: "Thermal Engineer",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Thermal",
         context:
           "You're at the thermal engineering console, watching the equipment bay temperature readout. The number is moving in the wrong direction. You have the thermal limits document open on your screen. Your radio is live.",
         briefing:
@@ -512,6 +574,8 @@ export const NORMAL_SCENARIOS = [
         id: "MaterialsSpec",
         label: "Materials Specialist",
         isPrimary: false,
+        useRandomCallsign: false,
+        callsign: "Tech",
         context:
           "You're at the console next to the thermal engineer. You read the vacuum tape and blanket material specs a while back. You have the reference document open now and you're searching for the right section. Your radio is open.",
         briefing:
@@ -521,6 +585,7 @@ export const NORMAL_SCENARIOS = [
         id: "Astronaut2",
         label: "Astronaut 2",
         isPrimary: false,
+        useRandomCallsign: true,
         context:
           "You're on the equipment bay exterior, tethered to an adjacent handhold a couple meters from Astronaut 1. Your arms are already getting tired. Your suit radio is live.",
         briefing:
